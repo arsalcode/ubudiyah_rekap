@@ -1,3 +1,6 @@
+# File Dokumentasi (Jangan di-upload ke GitHub)
+README.md
+
 # OS & Editor
 .DS_Store
 Thumbs.db
@@ -11,4 +14,3 @@ npm-debug.log*
 
 # Scratch & test
 test_*.js
-
