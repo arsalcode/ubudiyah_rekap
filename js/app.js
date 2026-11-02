@@ -51,6 +51,7 @@ function checkUrlAuthParams() {
         if (matched) {
           state.data.currentEmail = matched.email;
           state.data.currentUser = matched.name;
+          localStorage.setItem("ubudiyah_device_auth_email", matched.email);
           StorageManager.save(state.data);
         }
       }
@@ -289,13 +290,15 @@ function renderPresensiTab() {
   const unauth = document.getElementById("unauthenticatedState");
   const auth = document.getElementById("authenticatedState");
 
-  // Cari anggota berdasarkan currentEmail
-  let matchedMember = findMemberByEmail(state.data.currentEmail);
-  if (!matchedMember && state.data.currentUser) {
-    matchedMember = (state.data.members || []).find(m => (typeof m === "object" ? m.name : m) === state.data.currentUser);
-  }
+  // Cari anggota HANYA berdasarkan email yang terdaftar
+  const deviceEmail = localStorage.getItem("ubudiyah_device_auth_email") || state.data.currentEmail;
+  const matchedMember = findMemberByEmail(deviceEmail);
 
   if (!matchedMember) {
+    // Jika email tidak terdaftar (misal belum login, atau email telah diubah/dihapus oleh Admin):
+    state.data.currentUser = null;
+    state.data.currentEmail = null;
+    localStorage.removeItem("ubudiyah_device_auth_email");
     unauth.classList.remove("hidden");
     auth.classList.add("hidden");
     return;
@@ -1059,10 +1062,23 @@ function handleMemberFormSubmit(event) {
       });
     }
 
-    // Perbarui kaitan aktif di browser jika user yang sedang aktif diedit
-    if (state.data.currentUser === oldName || state.data.currentEmail === oldEmail) {
-      state.data.currentUser = cleanName;
-      state.data.currentEmail = cleanEmail;
+    // Jika email petugas diubah oleh Admin, cabut akses login yang memakai email lama
+    const savedDeviceEmail = localStorage.getItem("ubudiyah_device_auth_email");
+    if (savedDeviceEmail && oldEmail && savedDeviceEmail.toLowerCase() === oldEmail.toLowerCase()) {
+      if (oldEmail.toLowerCase() !== cleanEmail.toLowerCase()) {
+        localStorage.removeItem("ubudiyah_device_auth_email");
+        state.data.currentUser = null;
+        state.data.currentEmail = null;
+      } else if (cleanName !== oldName) {
+        state.data.currentUser = cleanName;
+      }
+    } else if (state.data.currentEmail && state.data.currentEmail.toLowerCase() === oldEmail.toLowerCase()) {
+      if (oldEmail.toLowerCase() !== cleanEmail.toLowerCase()) {
+        state.data.currentUser = null;
+        state.data.currentEmail = null;
+      } else if (cleanName !== oldName) {
+        state.data.currentUser = cleanName;
+      }
     }
 
     StorageManager.save(state.data);
@@ -1096,8 +1112,15 @@ function removeMemberByIndex(idx) {
   const name = typeof obj === "object" ? obj.name : obj;
 
   if (confirm(`Yakin ingin menghapus petugas "${name}" dari daftar?`)) {
+    const memberEmail = typeof obj === "object" ? (obj.email || "") : "";
     state.data.members.splice(idx, 1);
-    if (state.data.currentUser === name) {
+    const savedDeviceEmail = localStorage.getItem("ubudiyah_device_auth_email");
+    if (savedDeviceEmail && memberEmail && savedDeviceEmail.toLowerCase() === memberEmail.toLowerCase()) {
+      localStorage.removeItem("ubudiyah_device_auth_email");
+      state.data.currentUser = null;
+      state.data.currentEmail = null;
+    }
+    if (state.data.currentUser === name || (state.data.currentEmail && state.data.currentEmail.toLowerCase() === memberEmail.toLowerCase())) {
       state.data.currentUser = null;
       state.data.currentEmail = null;
     }

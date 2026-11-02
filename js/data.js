@@ -128,6 +128,8 @@ class StorageManager {
           data.currentUser = matched.name;
           data.currentEmail = matched.email;
         } else {
+          // Email di HP ini sudah tidak terdaftar / telah diubah oleh Admin -> Cabut akses!
+          localStorage.removeItem("ubudiyah_device_auth_email");
           data.currentUser = null;
           data.currentEmail = null;
         }
