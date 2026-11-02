@@ -554,6 +554,10 @@ function handleUploadAttendance() {
   setTimeout(() => {
     StorageManager.save(state.data);
 
+    // Hilangkan angka dan lingkaran "Tercatat" di pojok kiri atas setelah upload selesai
+    sessionClickCount = 0;
+    updateSessionBadge();
+
     if (btn) btn.disabled = false;
     if (icon) icon.className = "fa-solid fa-cloud-arrow-up text-xs";
     if (text) text.textContent = "Upload";
