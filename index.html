@@ -292,8 +292,13 @@
           <select id="rekapMonthSelect" class="bg-slate-100 border border-slate-200 font-bold text-xs sm:text-sm text-slate-800 rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer">
             <!-- Diisi dinamis -->
           </select>
-          <button onclick="promptNewMonth()" class="text-xs font-semibold px-2 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 hover:bg-emerald-100" title="Tambah Bulan Baru">
+          <button onclick="promptNewMonth()" class="text-xs font-semibold px-2.5 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition flex items-center gap-1 cursor-pointer" title="Tambah Bulan Baru">
             <i class="fa-solid fa-plus"></i>
+            <span class="hidden sm:inline">Tambah</span>
+          </button>
+          <button onclick="promptDeleteCurrentMonth()" class="text-xs font-semibold px-2.5 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-200 hover:bg-rose-100 transition flex items-center gap-1 cursor-pointer" title="Hapus Periode Bulan yang Sedang Dipilih">
+            <i class="fa-solid fa-trash-can"></i>
+            <span class="hidden sm:inline">Hapus</span>
           </button>
         </div>
 

@@ -1158,7 +1158,7 @@ function renderAdminMonthCards() {
       <div class="flex items-center space-x-1.5">
         ${!isActive ? `<button onclick="setActiveMonth('${m.id}')" class="px-3 py-1.5 bg-white hover:bg-emerald-600 hover:text-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer">Aktifkan</button>` : ''}
         <button onclick="editMonthName('${m.id}')" class="p-1.5 text-slate-400 hover:text-emerald-700 text-xs cursor-pointer" title="Ubah Nama Bulan"><i class="fa-solid fa-pen"></i></button>
-        ${!isActive && Object.keys(state.data.months || {}).length > 1 ? `<button onclick="deleteMonth('${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 text-xs cursor-pointer" title="Hapus Periode Bulan"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+        <button onclick="deleteMonth('${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 text-xs cursor-pointer" title="Hapus Periode Bulan"><i class="fa-solid fa-trash-can"></i></button>
       </div>
     `;
 
@@ -1189,18 +1189,32 @@ function editMonthName(monthId) {
 
 function deleteMonth(monthId) {
   if (!state.isAdmin) return;
-  const m = state.data.months && state.data.months[monthId];
+
+  const monthKeys = Object.keys(state.data.months || {});
+  if (monthKeys.length <= 1) {
+    showToast("Minimal harus ada 1 periode bulan di sistem. Tidak dapat menghapus semua bulan.", "error");
+    return;
+  }
+
+  const targetId = monthId || state.data.activeMonth;
+  const m = state.data.months && state.data.months[targetId];
   if (!m) return;
-  if (confirm(`Yakin ingin menghapus periode "${m.name}" beserta seluruh data riwayatnya?`)) {
-    delete state.data.months[monthId];
-    if (state.data.activeMonth === monthId) {
+
+  if (confirm(`Yakin ingin menghapus periode "${m.name}"?\nSemua riwayat adzan pada bulan ini akan ikut terhapus.`)) {
+    delete state.data.months[targetId];
+    if (state.data.activeMonth === targetId) {
       const remaining = Object.keys(state.data.months || {});
-      state.data.activeMonth = remaining[0] || "2026-11";
+      state.data.activeMonth = remaining[0];
     }
     StorageManager.save(state.data);
     renderApp();
-    showToast(`Periode "${m.name}" telah dihapus.`);
+    showToast(`Periode "${m.name}" telah berhasil dihapus.`);
   }
+}
+
+function promptDeleteCurrentMonth() {
+  if (!state.isAdmin) return;
+  deleteMonth(state.data.activeMonth);
 }
 
 function promptNewMonth() {
