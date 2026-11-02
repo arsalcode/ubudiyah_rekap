@@ -245,14 +245,28 @@
             <span class="text-slate-400 text-xs">Hitungan otomatis masuk ke rekap tanpa perlu pilih waktu sholat.</span>
           </p>
 
-          <!-- Tombol Batalkan (Merah Persegi Solid) -->
-          <div class="mt-8 pt-6 border-t border-slate-100/80 flex items-center justify-center">
+          <!-- Tombol Aksi: Kurangi & Upload -->
+          <div class="mt-8 pt-6 border-t border-slate-100/80 flex flex-col items-center justify-center space-y-3">
             
-            <!-- Batalkan Klik (Kotak Merah Solid) -->
-            <button onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer">
-              <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
-              <span>Salah Klik? Batalkan (-1)</span>
-            </button>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <!-- Tombol Kurangi (Kotak Merah Solid) -->
+              <button onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer" title="Kurangi hitungan adzan">
+                <i class="fa-solid fa-minus text-xs"></i>
+                <span>Kurangi</span>
+              </button>
+
+              <!-- Tombol Upload (Kotak Hijau Solid) -->
+              <button id="btnUploadPresensi" onclick="handleUploadAttendance()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer" title="Upload data presensi">
+                <i id="btnUploadIcon" class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                <span id="btnUploadText">Upload</span>
+              </button>
+            </div>
+
+            <!-- Keterangan Status Upload Selesai -->
+            <div id="uploadStatusNotice" class="hidden items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs sm:text-sm font-black shadow-xs fade-in">
+              <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+              <span>Upload Selesai</span>
+            </div>
 
           </div>
 

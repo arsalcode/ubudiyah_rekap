@@ -485,6 +485,13 @@ function setupClickAdzanButton() {
     sessionClickCount++;
     updateSessionBadge();
 
+    // Sembunyikan keterangan upload selesai saat ada klik baru
+    const notice = document.getElementById("uploadStatusNotice");
+    if (notice) {
+      notice.classList.add("hidden");
+      notice.classList.remove("flex");
+    }
+
     StorageManager.save(state.data);
     playSuccessSound();
     renderPresensiTab();
@@ -516,9 +523,49 @@ function undoLastAdzan() {
   sessionClickCount = Math.max(0, sessionClickCount - 1);
   updateSessionBadge();
 
+  // Sembunyikan keterangan upload selesai saat dikurangi
+  const notice = document.getElementById("uploadStatusNotice");
+  if (notice) {
+    notice.classList.add("hidden");
+    notice.classList.remove("flex");
+  }
+
   StorageManager.save(state.data);
   renderPresensiTab();
-  showToast("1 hitungan adzan berhasil dibatalkan (-1).");
+  showToast("1 hitungan adzan berhasil dikurangi (-1).");
+}
+
+function handleUploadAttendance() {
+  const user = state.data.currentUser;
+  if (!user) {
+    showToast("Silakan login terlebih dahulu.", "error");
+    return;
+  }
+
+  const btn = document.getElementById("btnUploadPresensi");
+  const icon = document.getElementById("btnUploadIcon");
+  const text = document.getElementById("btnUploadText");
+  const notice = document.getElementById("uploadStatusNotice");
+
+  if (btn) btn.disabled = true;
+  if (icon) icon.className = "fa-solid fa-spinner fa-spin text-xs";
+  if (text) text.textContent = "Mengunggah...";
+
+  setTimeout(() => {
+    StorageManager.save(state.data);
+
+    if (btn) btn.disabled = false;
+    if (icon) icon.className = "fa-solid fa-cloud-arrow-up text-xs";
+    if (text) text.textContent = "Upload";
+
+    if (notice) {
+      notice.classList.remove("hidden");
+      notice.classList.add("flex");
+    }
+
+    playSuccessSound();
+    showToast(`Alhamdulillah! Upload selesai untuk ${user} ☁️`);
+  }, 400);
 }
 
 function renderUserLogs(activeW, user) {
