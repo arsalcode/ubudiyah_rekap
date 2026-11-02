@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi & Rekap Ubudiyah</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- SheetJS untuk Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Google Identity Services (Sign in with Google / One Tap) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col select-none">
+
+  <!-- ========================================== -->
+  <!-- HEADER ATAS (No-Print) -->
+  <!-- ========================================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Judul -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="goToPresensi()">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md text-lg shrink-0">
+            <i class="fa-solid fa-mosque"></i>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">Presensi Ubudiyah</h1>
+            <p class="text-[11px] text-slate-500 font-medium" id="headerSubtitle"></p>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Kanan (Status Petugas & Admin) -->
+        <div class="flex items-center space-x-2">
+          
+          <!-- Indikator Petugas Aktif (Hanya terlihat jika bukan admin) -->
+          <div id="currentUserBadge" class="hidden items-center bg-slate-100 border border-slate-200 rounded-full py-1 px-3 space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="currentUserName" class="text-xs font-bold text-slate-700">Nama Petugas</span>
+          </div>
+
+          <!-- Tombol Masuk Admin (Jika Belum Login Admin) -->
+          <button id="btnAdminLoginTrigger" onclick="openAdminPinModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-600 rounded-xl text-xs font-bold border border-slate-200 transition flex items-center space-x-1.5 shadow-2xs">
+            <i class="fa-solid fa-lock text-xs"></i>
+            <span>Masuk Admin</span>
+          </button>
+
+          <!-- Status Admin Aktif (Jika Sedang Login Admin) -->
+          <div id="adminActiveBadge" class="hidden items-center space-x-2">
+            <span class="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-black flex items-center gap-1 shadow-2xs">
+              <i class="fa-solid fa-shield-halved text-amber-600"></i>
+              <span class="hidden sm:inline">Admin</span>
+            </span>
+            <button onclick="logoutAdmin()" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition" title="Keluar dari Mode Admin">
+              <i class="fa-solid fa-arrow-right-from-bracket sm:mr-1"></i>
+              <span class="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- NAVIGASI TAB KHUSUS ADMIN (Hanya Muncul Jika Admin Login) -->
+  <!-- ========================================== -->
+  <nav id="adminNavTabs" class="hidden bg-emerald-900 text-white border-b border-emerald-950 no-print">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="flex space-x-2 py-2 overflow-x-auto text-xs font-bold">
+        <button data-tab="rekap" class="nav-tab-btn py-1.5 px-3 rounded-lg transition flex items-center space-x-1.5 bg-emerald-700 text-white shadow-xs">
+          <i class="fa-solid fa-table-list"></i>
+          <span>Rekap Seluruh Petugas</span>
+        </button>
+
+        <button data-tab="kelola" class="nav-tab-btn py-1.5 px-3 rounded-lg transition flex items-center space-x-1.5 text-emerald-200 hover:bg-emerald-800">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>Kelola Petugas</span>
+        </button>
+
+        <button data-tab="database" class="nav-tab-btn py-1.5 px-3 rounded-lg transition flex items-center space-x-1.5 text-emerald-200 hover:bg-emerald-800">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>Database & Excel</span>
+        </button>
+
+        <button data-tab="presensi" class="nav-tab-btn py-1.5 px-3 rounded-lg transition flex items-center space-x-1.5 text-emerald-200 hover:bg-emerald-800 ml-auto">
+          <i class="fa-solid fa-eye"></i>
+          <span>Pratinjau Presensi Petugas</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========================================== -->
+  <!-- KONTEN UTAMA -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ========================================================== -->
+    <!-- TAB 1: PRESENSI PETUGAS (TAMPILAN UTAMA & SATU-SATUNYA UNTUK PETUGAS) -->
+    <!-- ========================================================== -->
+    <section id="tab-presensi" class="tab-pane space-y-6">
+
+      <!-- Keadaan 1: Petugas Belum Masuk Email -->
+      <div id="unauthenticatedState" class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm text-center space-y-6 fade-in max-w-md mx-auto">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl shadow-xs">
+          <i class="fa-solid fa-mosque"></i>
+        </div>
+        <div>
+          <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Presensi Petugas Ubudiyah</h2>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+            Masuk dengan <strong>Email Google</strong> Anda yang telah didaftarkan oleh Admin/Pengurus DKM.
+          </p>
+        </div>
+
+        <!-- Integrasi Google Sign In (Chrome Profile One Tap) -->
+        <div id="googleAuthSection" class="space-y-3">
+          <div id="googleBtnSlot" class="flex justify-center min-h-[44px]"></div>
+          
+          <div class="relative flex py-1 items-center">
+            <div class="flex-grow border-t border-slate-200"></div>
+            <span class="flex-shrink mx-3 text-[11px] text-slate-400 font-semibold uppercase tracking-wider">atau masukkan email Google</span>
+            <div class="flex-grow border-t border-slate-200"></div>
+          </div>
+        </div>
+
+        <!-- Form Masuk dengan Email Google -->
+        <form id="emailLoginForm" onsubmit="handleEmailLogin(event)" class="space-y-3.5 text-left">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Google (Chrome) Petugas</label>
+            <div class="relative">
+              <i class="fa-brands fa-google absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+              <input type="email" id="inputGoogleEmail" required placeholder="contoh: arsalah18m@gmail.com" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold rounded-xl text-sm shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+            <span>Verifikasi Email & Masuk ke Tombol</span>
+          </button>
+        </form>
+
+        <!-- Kotak Peringatan jika Email Tidak Terdaftar -->
+        <div id="emailAuthError" class="hidden p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs text-left space-y-1">
+          <p class="font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+            Email Tidak Terdaftar
+          </p>
+          <p class="text-rose-600 leading-relaxed text-[11px]" id="emailAuthErrorText">
+            Email ini belum didaftarkan sebagai petugas oleh Admin. Silakan hubungi pengurus DKM.
+          </p>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 text-[11px] text-slate-400 text-center">
+          <i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i>
+          Sistem otomatis mengarahkan ke tombol Anda sesuai email yang didaftarkan Admin.
+        </div>
+      </div>
+
+      <!-- Keadaan 2: Petugas Sudah Masuk (Tampilan Super Simpel: Tombol 1-Klik) -->
+      <div id="authenticatedState" class="hidden space-y-5 fade-in">
+        
+        <!-- Identitas Petugas Terautentikasi -->
+        <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex items-center justify-between">
+          <div class="flex items-center space-x-3.5">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-lg shadow-xs shrink-0">
+              <i class="fa-solid fa-user-check text-sm"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-slate-400">Petugas Terautentikasi</span>
+                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Email Sesuai
+                </span>
+              </div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight" id="activeUserGreeting">
+                Arsal
+              </h2>
+              <p class="text-[11px] text-slate-400 font-medium" id="activeUserEmail">
+                arsal@gmail.com
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-100/70 border border-slate-200/70 px-3 py-1.5 rounded-xl">
+            <i class="fa-solid fa-lock text-[10px] text-slate-400"></i>
+            <span>Terkunci Otomatis</span>
+          </div>
+        </div>
+
+        <!-- TOMBOL RAKSASA: 1-KLIK SAYA ADZAN -->
+        <div class="bg-gradient-to-b from-white via-white to-emerald-50/50 rounded-3xl border border-emerald-100 p-6 sm:p-12 text-center shadow-sm relative overflow-hidden">
+          
+          <!-- Indikator Angka Sementara Sesi Ini (BULAT DI POJOK ATAS KIRI) -->
+          <div id="sessionClickBadge" class="hidden absolute top-3.5 left-3.5 sm:top-5 sm:left-5 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border-2 border-emerald-500 shadow-md flex-col items-center justify-center text-center badge-pop z-10 select-none">
+            <span id="sessionClickNumber" class="text-base sm:text-lg font-black text-emerald-600 leading-none">1x</span>
+            <span class="text-[8px] sm:text-[9px] font-extrabold text-slate-400 uppercase tracking-tighter mt-0.5">Tercatat</span>
+          </div>
+
+          <div class="flex items-center justify-center my-2">
+            <!-- Tombol Bulat Raksasa -->
+            <div class="relative inline-block shrink-0">
+              <div class="absolute inset-0 rounded-full bg-emerald-400 opacity-20 pulse-ring"></div>
+              <button id="btnClickAdzan" class="btn-adzan-giant relative w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-gradient-to-tr from-emerald-700 via-emerald-600 to-emerald-500 text-white flex flex-col items-center justify-center border-4 border-emerald-200 shadow-2xl cursor-pointer select-none">
+                <i class="fa-solid fa-bullhorn text-4xl sm:text-5xl mb-2 drop-shadow-md"></i>
+                <span class="text-lg sm:text-xl font-black tracking-wide uppercase drop-shadow-sm">SAYA ADZAN</span>
+                <span class="text-xs font-bold bg-white/20 px-3 py-0.5 rounded-full mt-1.5 text-emerald-50">+1 Adzan</span>
+              </button>
+            </div>
+          </div>
+
+          <p class="text-xs sm:text-sm text-slate-600 font-medium mt-6">
+            Klik tombol di atas setiap kali Anda selesai adzan.<br>
+            <span class="text-slate-400 text-xs">Hitungan otomatis masuk ke rekap tanpa perlu pilih waktu sholat.</span>
+          </p>
+
+          <!-- Tombol Batalkan (Merah Persegi Solid) -->
+          <div class="mt-8 pt-6 border-t border-slate-100/80 flex items-center justify-center">
+            
+            <!-- Batalkan Klik (Kotak Merah Solid) -->
+            <button onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer">
+              <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
+              <span>Salah Klik? Batalkan (-1)</span>
+            </button>
+
+          </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- TAB 2: TABEL REKAPITULASI (HANYA UNTUK ADMIN) -->
+    <!-- ========================================================== -->
+    <section id="tab-rekap" class="tab-pane hidden space-y-6">
+
+      <!-- Header Cetak -->
+      <div class="print-only hidden mb-6 text-center border-b-2 border-slate-800 pb-4">
+        <h2 class="text-xl font-bold uppercase tracking-wider" id="printReportTitle">REKAPITULASI UBUDIYAH BULANAN</h2>
+        <p class="text-sm text-slate-600 mt-1">Laporan Akumulasi Jumlah Adzan Petugas</p>
+      </div>
+
+      <!-- Bilah Pilihan Periode & Aksi Cepat Admin -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-wrap items-center justify-between gap-3 no-print">
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-bold text-slate-500 uppercase">Bulan:</span>
+          <select id="rekapMonthSelect" class="bg-slate-100 border border-slate-200 font-bold text-xs sm:text-sm text-slate-800 rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer">
+            <!-- Diisi dinamis -->
+          </select>
+          <button onclick="promptNewMonth()" class="text-xs font-semibold px-2 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 hover:bg-emerald-100" title="Tambah Bulan Baru">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="copyWhatsAppSummary()" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>Salin Format WA</span>
+          </button>
+
+          <button onclick="exportCurrentMonthExcel()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-file-excel text-sm"></i>
+            <span>Download Excel</span>
+          </button>
+
+          <button onclick="window.print()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-print"></i>
+            <span>Cetak PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ringkasan Statistik -->
+      <div class="grid grid-cols-3 gap-3 no-print">
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-center">
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Total Adzan</p>
+          <h3 class="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5" id="statGrandTotal">0</h3>
+        </div>
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-center">
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Petugas Teraktif</p>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-800 mt-0.5 truncate" id="statTopMember">-</h3>
+        </div>
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-center">
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Jumlah Minggu</p>
+          <h3 class="text-xl sm:text-2xl font-black text-slate-700 mt-0.5" id="statWeeksCount">0</h3>
+        </div>
+      </div>
+
+      <!-- Tabel Master Rekapitulasi -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 to-white">
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-800">
+              Rekapitulasi Adzan Seluruh Petugas: <span class="text-emerald-700" id="tableMonthLabel">Juli 2026</span>
+            </h3>
+            <p class="text-xs text-slate-500">Tabel perhitungan mingguan dan total akhir bulan.</p>
+          </div>
+          <div class="no-print">
+            <input type="text" id="tableSearchInput" placeholder="Cari nama petugas..." class="text-xs px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 w-40">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200" id="rekapTableHead">
+              <!-- Kolom Minggu diisi dinamis -->
+            </thead>
+            <tbody id="rekapTableBody" class="divide-y divide-slate-100">
+              <!-- Baris diisi dinamis -->
+            </tbody>
+            <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-200 text-slate-800" id="rekapTableFoot">
+              <!-- Baris total diisi dinamis -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tanda Tangan Cetak -->
+      <div class="print-only hidden mt-12 pt-8 border-t border-slate-300">
+        <div class="flex justify-between text-center px-12">
+          <div>
+            <p class="text-sm">Mengetahui,</p>
+            <p class="text-sm font-semibold">Ketua DKM / Koordinator Ubudiyah</p>
+            <div class="h-20"></div>
+            <p class="text-sm font-bold">( ............................................ )</p>
+          </div>
+          <div>
+            <p class="text-sm">Dibuat oleh,</p>
+            <p class="text-sm font-semibold">Sekretaris / Pencatat Jadwal</p>
+            <div class="h-20"></div>
+            <p class="text-sm font-bold">( ............................................ )</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- TAB 3: KELOLA PETUGAS & MINGGU (HANYA UNTUK ADMIN) -->
+    <!-- ========================================================== -->
+    <section id="tab-kelola" class="tab-pane hidden space-y-6">
+
+      <!-- Kelola Daftar Petugas -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Daftar Petugas Terdaftar</h3>
+            <p class="text-xs text-slate-500">Hanya nama yang terdaftar di sini yang bisa dipilih petugas untuk presensi.</p>
+          </div>
+          <button onclick="openAddMemberModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center space-x-1.5 shadow-2xs">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Tambah Petugas Baru</span>
+          </button>
+        </div>
+
+        <div id="manageMembersList" class="flex flex-wrap gap-2.5">
+          <!-- Diisi dinamis -->
+        </div>
+      </div>
+
+      <!-- Kelola Minggu Presensi yang Sedang Berjalan -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Atur Minggu Presensi Aktif</h3>
+            <p class="text-xs text-slate-500">Pilih minggu mana yang saat ini sedang berlangsung untuk pencatatan tombol adzan.</p>
+          </div>
+          <button onclick="promptNewWeek()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center space-x-1.5 shadow-2xs">
+            <i class="fa-solid fa-calendar-plus"></i>
+            <span>Tambah Minggu Baru</span>
+          </button>
+        </div>
+
+        <div id="adminWeekSelectorCards" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Diisi dinamis -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- TAB 4: DATABASE & EXCEL (HANYA UNTUK ADMIN) -->
+    <!-- ========================================================== -->
+    <section id="tab-database" class="tab-pane hidden space-y-6">
+
+      <!-- Kartu Ekspor & Impor Excel -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Ekspor Excel -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl mb-3">
+              <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Unduh Database Excel (.xlsx)</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              Ekspor seluruh data rekap mingguan, total bulanan, dan riwayat presensi ke file Excel resmi.
+            </p>
+          </div>
+          <button onclick="exportCurrentMonthExcel()" class="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-2xs">
+            <i class="fa-solid fa-download"></i>
+            <span>Unduh File Excel Sekarang</span>
+          </button>
+        </div>
+
+        <!-- Impor Excel -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl mb-3">
+              <i class="fa-solid fa-file-import"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Impor dari File Excel</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              Pulihkan atau masukkan data langsung dari file Excel hasil ekspor sebelumnya.
+            </p>
+          </div>
+          <div class="mt-4">
+            <label class="block w-full text-center py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-300 cursor-pointer transition">
+              <i class="fa-solid fa-upload mr-1"></i>
+              <span>Pilih File Excel (.xlsx)</span>
+              <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelFile(event)">
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Fitur Paste Teks Otomatis dari WhatsApp -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+              Input Cepat: Tempel Teks Catatan WhatsApp
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Jika Anda punya catatan teks mingguan dari grup WA, tempel di sini dan sistem akan otomatis menghitung jumlah adzannya!
+            </p>
+          </div>
+          <button onclick="loadSampleText()" class="text-xs font-semibold px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">
+            Isi Contoh Format Anda
+          </button>
+        </div>
+
+        <textarea id="pasteTextInput" rows="6" class="w-full p-3 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Contoh:
+List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
+1. Alan = Zuhur, ashar, magrib, isya, ashar
+2. Radit = Zuhur, Asar, Maghrib, Isya
+..."></textarea>
+
+        <div class="flex justify-end">
+          <button onclick="processPastedText()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-gears"></i>
+            <span>Proses Teks & Masukkan ke Rekap</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pengaturan Keamanan PIN Admin, Tautkan Akun & Reset -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+        <h3 class="text-base font-bold text-slate-800">Keamanan & Pemeliharaan Akun</h3>
+
+        <!-- Opsi Tautkan HP Ini Langsung ke Petugas -->
+        <div class="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-mobile-screen-button text-emerald-600"></i>
+              Kunci / Tautkan HP Ini Langsung ke Petugas:
+            </h4>
+            <span class="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+              Otomatis 0-Klik
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-600 leading-relaxed">
+            Pilih nama petugas di bawah untuk mengunci browser HP ini langsung ke petugas tersebut. Setiap kali web dibuka, akan <strong>langsung masuk ke tombol adzan</strong> tanpa perlu ketik email lagi.
+          </p>
+          <div class="flex flex-wrap sm:flex-nowrap gap-2 pt-1">
+            <select id="bindDeviceSelect" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <!-- Diisi dinamis -->
+            </select>
+            <button onclick="bindDeviceToSelectedMember()" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-2xs whitespace-nowrap cursor-pointer">
+              <i class="fa-solid fa-link text-xs mr-1"></i> Kunci HP Ini
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <button onclick="promptChangeAdminPin()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-200 transition">
+            <i class="fa-solid fa-key mr-1 text-slate-500"></i> Ubah PIN Admin (Saat ini: <span id="currentPinPreview">1234</span>)
+          </button>
+
+          <button onclick="resetDeviceAccount()" class="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition">
+            <i class="fa-solid fa-lock-open mr-1 text-amber-600"></i> Lepas Kaitan Akun HP Ini (<span id="deviceBoundUserLabel">Tidak Ada</span>)
+          </button>
+
+          <button onclick="resetDataPrompt()" class="text-xs font-bold text-rose-600 hover:text-rose-800">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reset ke Data Bawaan (Juli 2026)
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: PIN LOGIN ADMIN -->
+  <!-- ========================================== -->
+  <div id="adminPinModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 space-y-5 shadow-2xl fade-in text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shadow-xs">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-slate-800">Masuk Mode Admin</h3>
+        <p class="text-xs text-slate-500 mt-1">Masukkan PIN Pengurus/Admin untuk melihat rekap & mengelola petugas:</p>
+      </div>
+
+      <div>
+        <input type="password" id="adminPinInput" maxlength="10" placeholder="PIN (Default: 1234)" class="w-full text-center text-lg font-black tracking-widest py-2.5 px-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 transition">
+        <p class="text-[11px] text-slate-400 mt-1.5">PIN bawaan awal adalah: <strong>1234</strong></p>
+      </div>
+
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeAdminPinModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+          Batal
+        </button>
+        <button onclick="submitAdminPin()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+          Masuk Admin
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: FORM TAMBAH / EDIT PETUGAS & EMAIL -->
+  <!-- ========================================== -->
+  <div id="memberFormModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl fade-in text-left">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-3">
+          <div id="memberFormIcon" class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shrink-0">
+            <i class="fa-solid fa-user-pen"></i>
+          </div>
+          <div>
+            <h3 id="memberFormTitle" class="text-base font-black text-slate-800">Edit Data Petugas</h3>
+            <p class="text-[11px] text-slate-500 font-medium">Atur nama dan email Google untuk presensi</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeMemberFormModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none">&times;</button>
+      </div>
+
+      <form id="memberForm" onsubmit="handleMemberFormSubmit(event)" class="space-y-4">
+        <input type="hidden" id="memberFormIndex" value="-1">
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Petugas</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+            <input type="text" id="memberFormName" required placeholder="Contoh: Arsal" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Email Google (Chrome)
+          </label>
+          <div class="relative">
+            <i class="fa-brands fa-google absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+            <input type="email" id="memberFormEmail" required placeholder="Contoh: arsal@gmail.com" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+            Petugas yang login di Chrome dengan email ini akan otomatis masuk ke tombol adzannya sendiri.
+          </p>
+        </div>
+
+        <div class="flex space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeMemberFormModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+            Batal
+          </button>
+          <button type="submit" id="memberFormSubmitBtn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-check text-xs"></i>
+            <span id="memberFormSubmitText">Simpan Perubahan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+
+  <!-- Toast Notifikasi Melayang -->
+  <div id="toastNotification" class="hidden fixed bottom-5 right-5 z-50 bg-white border-l-4 border-emerald-500 text-slate-800 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 transition-all duration-300">
+    <i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>
+    <span id="toastMessage" class="text-xs sm:text-sm font-semibold">Berhasil!</span>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/data.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/excel.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

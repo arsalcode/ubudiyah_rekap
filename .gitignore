@@ -1,0 +1,13 @@
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Dependencies & logs
+node_modules/
+*.log
+npm-debug.log*
+
+# Scratch & test
+test_*.js
