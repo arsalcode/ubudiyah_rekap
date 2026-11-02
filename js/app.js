@@ -69,29 +69,20 @@ function getActiveMonth() {
     if (keys.length > 0) {
       state.data.activeMonth = keys[0];
     } else {
-      const defaultId = "2026-07";
+      const defaultId = "2026-11";
       state.data.months[defaultId] = {
         id: defaultId,
-        name: "Juli 2026",
-        weeks: []
+        name: "November 2026",
+        counts: {},
+        logs: []
       };
       state.data.activeMonth = defaultId;
     }
   }
-  return state.data.months[state.data.activeMonth];
-}
-
-function getActiveWeek() {
-  const month = getActiveMonth();
-  const weeks = month.weeks || [];
-  if (weeks.length === 0) return null;
-
-  let activeW = weeks.find(w => w.id === state.data.activeWeekId);
-  if (!activeW) {
-    activeW = weeks[0];
-    state.data.activeWeekId = activeW.id;
-  }
-  return activeW;
+  const month = state.data.months[state.data.activeMonth];
+  if (!month.counts) month.counts = {};
+  if (!month.logs) month.logs = [];
+  return month;
 }
 
 /**
@@ -118,10 +109,6 @@ function setupNavigation() {
   if (rekapMonthSel) {
     rekapMonthSel.addEventListener("change", (e) => {
       state.data.activeMonth = e.target.value;
-      const month = getActiveMonth();
-      if (month.weeks && month.weeks.length > 0) {
-        state.data.activeWeekId = month.weeks[0].id;
-      }
       StorageManager.save(state.data);
       renderApp();
     });
@@ -462,23 +449,30 @@ function setupClickAdzanButton() {
       return;
     }
 
-    const activeW = getActiveWeek();
-    if (!activeW) {
-      showToast("Belum ada minggu aktif di sistem. Hubungi Admin.", "error");
+    const month = getActiveMonth();
+    if (!month) {
+      showToast("Belum ada bulan aktif di sistem. Hubungi Admin.", "error");
       return;
     }
 
-    if (!activeW.counts) activeW.counts = {};
-    activeW.counts[user] = (activeW.counts[user] || 0) + 1;
+    if (!month.counts) month.counts = {};
+    month.counts[user] = (month.counts[user] || 0) + 1;
 
-    // Catat log
-    if (!activeW.logs) activeW.logs = [];
+    // Catat log bertugas harian
+    if (!month.logs) month.logs = [];
     const now = new Date();
-    activeW.logs.unshift({
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const dayName = days[now.getDay()];
+    const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    month.logs.unshift({
       id: Date.now(),
       name: user,
-      time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      date: now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })
+      day: dayName,
+      date: dateStr,
+      time: timeStr,
+      timestamp: Date.now()
     });
 
     // Tambah hitungan sesi sementara (di sebelah kiri tombol)
@@ -501,21 +495,21 @@ function setupClickAdzanButton() {
 
 function undoLastAdzan() {
   const user = state.data.currentUser;
-  const activeW = getActiveWeek();
-  if (!user || !activeW) return;
+  const month = getActiveMonth();
+  if (!user || !month) return;
 
-  const currentCount = (activeW.counts && activeW.counts[user]) || 0;
+  const currentCount = (month.counts && month.counts[user]) || 0;
   if (currentCount <= 0) {
     showToast("Hitungan adzan Anda sudah 0.", "error");
     return;
   }
 
-  activeW.counts[user] = currentCount - 1;
+  month.counts[user] = currentCount - 1;
 
-  if (activeW.logs) {
-    const idx = activeW.logs.findIndex(l => l.name === user);
+  if (month.logs) {
+    const idx = month.logs.findIndex(l => l.name === user);
     if (idx !== -1) {
-      activeW.logs.splice(idx, 1);
+      month.logs.splice(idx, 1);
     }
   }
 
@@ -572,30 +566,6 @@ function handleUploadAttendance() {
   }, 400);
 }
 
-function renderUserLogs(activeW, user) {
-  const container = document.getElementById("userLogList");
-  const countLabel = document.getElementById("logCountLabel");
-  if (!container || !activeW) return;
-
-  const userLogs = (activeW.logs || []).filter(l => l.name === user);
-  countLabel.textContent = `${userLogs.length} Catatan`;
-  container.innerHTML = "";
-
-  if (userLogs.length === 0) {
-    container.innerHTML = `<p class="text-slate-400 italic py-2 text-center">Belum ada riwayat klik pada minggu ini.</p>`;
-    return;
-  }
-
-  userLogs.slice(0, 5).forEach(l => {
-    const item = document.createElement("div");
-    item.className = "flex items-center justify-between py-1.5 px-3 bg-slate-50 rounded-xl border border-slate-100";
-    item.innerHTML = `
-      <span class="font-medium text-slate-700"><i class="fa-regular fa-clock text-emerald-600 mr-1.5"></i> ${l.date}, pukul ${l.time} WIB</span>
-      <span class="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded text-[10px]">+1 Adzan</span>
-    `;
-    container.appendChild(item);
-  });
-}
 
 function playSuccessSound() {
   try {
@@ -616,14 +586,15 @@ function playSuccessSound() {
 
 /**
  * =========================================================================
- * 4. TAB 2: TABEL REKAPITULASI (KHUSUS ADMIN)
+ * 4. TAB 2: TABEL REKAPITULASI BULANAN (KHUSUS ADMIN)
  * =========================================================================
  */
 function renderRekapTab() {
   if (!state.isAdmin) return;
 
   const month = getActiveMonth();
-  const weeks = month.weeks || [];
+  const counts = month.counts || {};
+  const logs = month.logs || [];
 
   const rekapMonthSel = document.getElementById("rekapMonthSelect");
   if (rekapMonthSel) {
@@ -638,20 +609,16 @@ function renderRekapTab() {
   }
 
   document.getElementById("tableMonthLabel").textContent = month.name;
-  document.getElementById("printReportTitle").textContent = `REKAPITULASI UBUDIYAH (TOTAL ADZAN) - ${month.name.toUpperCase()}`;
+  document.getElementById("printReportTitle").textContent = `REKAPITULASI UBUDIYAH BULANAN - ${month.name.toUpperCase()}`;
 
   let grandTotal = 0;
+  let activeMembersCount = 0;
   const memberTotals = {};
   getMemberNames().forEach(name => {
-    memberTotals[name] = 0;
-  });
-
-  weeks.forEach(w => {
-    Object.entries(w.counts || {}).forEach(([name, count]) => {
-      if (memberTotals[name] === undefined) memberTotals[name] = 0;
-      memberTotals[name] += count;
-      grandTotal += count;
-    });
+    const val = counts[name] || 0;
+    memberTotals[name] = val;
+    grandTotal += val;
+    if (val > 0) activeMembersCount++;
   });
 
   const sorted = Object.entries(memberTotals).sort((a, b) => b[1] - a[1]);
@@ -659,7 +626,8 @@ function renderRekapTab() {
 
   document.getElementById("statGrandTotal").textContent = `${grandTotal}x`;
   document.getElementById("statTopMember").textContent = topMember;
-  document.getElementById("statWeeksCount").textContent = `${weeks.length} Minggu`;
+  const statActiveElem = document.getElementById("statActiveMembersCount");
+  if (statActiveElem) statActiveElem.textContent = `${activeMembersCount} Orang`;
 
   renderRekapTable();
 }
@@ -668,25 +636,22 @@ function renderRekapTable() {
   if (!state.isAdmin) return;
 
   const month = getActiveMonth();
-  const weeks = month.weeks || [];
+  const counts = month.counts || {};
+  const logs = month.logs || [];
   const members = getMemberNames();
 
   const thead = document.getElementById("rekapTableHead");
   const tbody = document.getElementById("rekapTableBody");
   const tfoot = document.getElementById("rekapTableFoot");
 
-  let headerHtml = `<tr>
+  thead.innerHTML = `<tr>
     <th class="py-3 px-3 text-center w-12">No</th>
-    <th class="py-3 px-3 w-40">Nama Petugas</th>`;
-  
-  weeks.forEach((w, idx) => {
-    headerHtml += `<th class="py-3 px-3 text-center">${w.title || `Minggu ${idx + 1}`}</th>`;
-  });
-
-  headerHtml += `<th class="py-3 px-3 text-center w-28 bg-emerald-50 text-emerald-900">Total Bulan</th>
+    <th class="py-3 px-3 w-40">Nama Petugas</th>
+    <th class="py-3 px-3 text-center w-36 bg-emerald-50 text-emerald-900">Total 1 Bulan</th>
+    <th class="py-3 px-3">Hari & Tanggal Bertugas</th>
+    <th class="py-3 px-3 text-center w-36 no-print">Detail Riwayat</th>
     <th class="py-3 px-3 text-center w-24 no-print">Ubah (+/-)</th>
   </tr>`;
-  thead.innerHTML = headerHtml;
 
   const filteredMembers = state.searchQuery 
     ? members.filter(m => m.toLowerCase().includes(state.searchQuery))
@@ -694,111 +659,140 @@ function renderRekapTable() {
 
   tbody.innerHTML = "";
   if (filteredMembers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${weeks.length + 4}" class="text-center py-6 text-slate-400">Tidak ada nama yang cocok.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Tidak ada nama yang cocok.</td></tr>`;
     return;
   }
 
-  const weekSums = new Array(weeks.length).fill(0);
   let grandTotal = 0;
 
   filteredMembers.forEach((name, idx) => {
-    let rowTotal = 0;
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-slate-50 transition-colors";
+    const val = counts[name] || 0;
+    grandTotal += val;
 
-    let rowHtml = `
-      <td class="py-2.5 px-3 text-center text-slate-400 font-medium">${idx + 1}</td>
-      <td class="py-2.5 px-3 font-bold text-slate-800">${name}</td>
-    `;
+    // Ambil riwayat log petugas ini
+    const memberLogs = logs.filter(l => l.name === name);
 
-    weeks.forEach((w, wIdx) => {
-      const val = (w.counts && w.counts[name]) || 0;
-      rowTotal += val;
-      weekSums[wIdx] += val;
-      rowHtml += `<td class="py-2.5 px-3 text-center font-semibold ${val > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-300'}">${val}</td>`;
+    // Hitung kemunculan per hari
+    const dayCounts = {};
+    memberLogs.forEach(l => {
+      const d = l.day || "Hari";
+      dayCounts[d] = (dayCounts[d] || 0) + 1;
     });
 
-    grandTotal += rowTotal;
+    const daysSummaryHtml = Object.entries(dayCounts).length > 0
+      ? Object.entries(dayCounts).map(([d, c]) => 
+          `<span class="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[11px] font-bold mr-1 mb-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            ${d} <span class="text-emerald-700 font-extrabold">(${c}x)</span>
+          </span>`
+        ).join("")
+      : (val > 0 
+          ? `<span class="text-slate-400 text-xs italic">${val}x adzan tercatat</span>` 
+          : `<span class="text-slate-300 text-xs">-</span>`);
 
-    rowHtml += `
-      <td class="py-2.5 px-3 text-center font-black ${rowTotal > 0 ? 'text-emerald-800 bg-emerald-100/60' : 'text-slate-300'}">
-        ${rowTotal}
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-slate-50 transition-colors";
+    tr.innerHTML = `
+      <td class="py-3 px-3 text-center text-slate-400 font-medium">${idx + 1}</td>
+      <td class="py-3 px-3 font-bold text-slate-800">${name}</td>
+      <td class="py-3 px-3 text-center">
+        <span class="inline-block px-3 py-1 rounded-xl font-black text-sm ${val > 0 ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' : 'bg-slate-100 text-slate-400'}">
+          ${val}x
+        </span>
       </td>
-      <td class="py-2.5 px-3 text-center no-print">
+      <td class="py-3 px-3">
+        <div class="flex flex-wrap items-center">
+          ${daysSummaryHtml}
+        </div>
+      </td>
+      <td class="py-3 px-3 text-center no-print">
+        <button onclick="openMemberHistoryModal('${escapeName(name)}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1 mx-auto shadow-2xs cursor-pointer" title="Lihat detail riwayat hari & jam bertugas">
+          <i class="fa-solid fa-clock-rotate-left text-[11px] text-emerald-600"></i>
+          <span>Riwayat (${memberLogs.length})</span>
+        </button>
+      </td>
+      <td class="py-3 px-3 text-center no-print">
         <div class="inline-flex items-center gap-1">
-          <button onclick="manualAdjust('${escapeName(name)}', 1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 text-xs font-bold" title="Tambah 1 ke minggu aktif">+</button>
-          <button onclick="manualAdjust('${escapeName(name)}', -1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 text-xs font-bold" title="Kurangi 1 dari minggu aktif">-</button>
+          <button onclick="manualAdjust('${escapeName(name)}', 1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 text-xs font-bold cursor-pointer" title="Tambah 1">+</button>
+          <button onclick="manualAdjust('${escapeName(name)}', -1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 text-xs font-bold cursor-pointer" title="Kurangi 1">-</button>
         </div>
       </td>
     `;
-
-    tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
 
-  let footHtml = `<tr>
-    <td colspan="2" class="py-3 px-3 text-right uppercase text-xs tracking-wider">Total Adzan:</td>`;
-  
-  weekSums.forEach(sum => {
-    footHtml += `<td class="py-3 px-3 text-center text-emerald-800 font-bold">${sum}</td>`;
-  });
-
-  footHtml += `<td class="py-3 px-3 text-center text-emerald-900 font-black bg-emerald-100">${grandTotal}</td>
-    <td class="no-print"></td>
+  tfoot.innerHTML = `<tr>
+    <td colspan="2" class="py-3 px-3 text-right uppercase text-xs font-black tracking-wider text-slate-700">Total Adzan 1 Bulan:</td>
+    <td class="py-3 px-3 text-center text-emerald-900 font-black text-base bg-emerald-100 border border-emerald-200">${grandTotal}x</td>
+    <td colspan="3" class="no-print"></td>
   </tr>`;
-  tfoot.innerHTML = footHtml;
 }
 
 function manualAdjust(name, delta) {
   if (!state.isAdmin) return;
 
-  const activeW = getActiveWeek();
-  if (!activeW) return;
-  if (!activeW.counts) activeW.counts = {};
+  const month = getActiveMonth();
+  if (!month) return;
+  if (!month.counts) month.counts = {};
 
-  const current = activeW.counts[name] || 0;
+  const current = month.counts[name] || 0;
   const next = Math.max(0, current + delta);
-  activeW.counts[name] = next;
+  month.counts[name] = next;
+
+  if (delta > 0) {
+    const now = new Date();
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    if (!month.logs) month.logs = [];
+    month.logs.unshift({
+      id: Date.now(),
+      name: name,
+      day: days[now.getDay()],
+      date: now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+      time: now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+      timestamp: Date.now()
+    });
+  } else if (delta < 0 && month.logs) {
+    const idx = month.logs.findIndex(l => l.name === name);
+    if (idx !== -1) month.logs.splice(idx, 1);
+  }
 
   StorageManager.save(state.data);
   renderApp();
-  showToast(`${name}: ${next} adzan (${activeW.title})`);
+  showToast(`${name}: ${next} adzan (${month.name})`);
 }
 
 function copyWhatsAppSummary() {
   if (!state.isAdmin) return;
 
   const month = getActiveMonth();
-  const weeks = month.weeks || [];
+  const counts = month.counts || {};
+  const logs = month.logs || [];
   const members = getMemberNames();
 
-  const memberTotals = {};
   let grandTotal = 0;
-  members.forEach(m => memberTotals[m] = 0);
+  const sorted = members
+    .map(name => {
+      const c = counts[name] || 0;
+      grandTotal += c;
+      const memberLogs = logs.filter(l => l.name === name);
+      const days = [...new Set(memberLogs.map(l => l.day).filter(Boolean))];
+      return { name, count: c, days };
+    })
+    .filter(m => m.count > 0)
+    .sort((a, b) => b.count - a.count);
 
-  weeks.forEach(w => {
-    Object.entries(w.counts || {}).forEach(([m, count]) => {
-      if (memberTotals[m] === undefined) memberTotals[m] = 0;
-      memberTotals[m] += count;
-      grandTotal += count;
-    });
-  });
-
-  const sorted = Object.entries(memberTotals)
-    .filter(([_, count]) => count > 0)
-    .sort((a, b) => b[1] - a[1]);
-
-  let text = `📋 *REKAPITULASI UBUDIYAH (TOTAL ADZAN)*\n`;
+  let text = `📋 *REKAPITULASI UBUDIYAH BULANAN*\n`;
   text += `📅 *Periode:* ${month.name}\n`;
-  text += `📊 *Total Adzan:* ${grandTotal}x (${weeks.length} Minggu)\n\n`;
+  text += `📊 *Total Adzan:* ${grandTotal}x (${sorted.length} Petugas Bertugas)\n\n`;
   text += `*Perolehan Petugas:*\n`;
 
   if (sorted.length === 0) {
-    text += `_(Belum ada data adzan)_\n`;
+    text += `_(Belum ada data adzan pada bulan ini)_\n`;
   } else {
-    sorted.forEach(([name, count], idx) => {
+    sorted.forEach((m, idx) => {
       const icon = idx === 0 ? "🥇 " : idx === 1 ? "🥈 " : idx === 2 ? "🥉 " : `${idx + 1}. `;
-      text += `${icon}*${name}*: ${count}x adzan\n`;
+      const daysStr = m.days.length > 0 ? ` _(Hari: ${m.days.join(", ")})_` : "";
+      text += `${icon}*${m.name}*: ${m.count}x adzan${daysStr}\n`;
     });
   }
 
@@ -823,6 +817,78 @@ function fallbackCopy(text) {
   showToast("Format teks WhatsApp berhasil disalin!");
 }
 
+function openMemberHistoryModal(name) {
+  const modal = document.getElementById("memberHistoryModal");
+  if (!modal) return;
+
+  const month = getActiveMonth();
+  const title = document.getElementById("memberHistoryTitle");
+  const subtitle = document.getElementById("memberHistorySubtitle");
+  const badge = document.getElementById("memberHistoryCountBadge");
+  const list = document.getElementById("memberHistoryList");
+
+  if (title) title.textContent = `Riwayat Bertugas: ${name}`;
+  if (subtitle) subtitle.textContent = `Periode: ${month.name}`;
+
+  const memberLogs = (month.logs || []).filter(l => l.name === name);
+  const total = (month.counts && month.counts[name]) || memberLogs.length;
+
+  if (badge) badge.textContent = `${total}x Adzan`;
+  if (list) {
+    list.innerHTML = "";
+    if (memberLogs.length === 0) {
+      list.innerHTML = `<div class="p-6 text-center text-slate-400 italic text-xs">Belum ada catatan detail riwayat waktu untuk ${name} pada bulan ${month.name}.</div>`;
+    } else {
+      memberLogs.forEach(l => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 text-xs";
+        item.innerHTML = `
+          <div class="flex items-center space-x-2.5">
+            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-[11px] shrink-0">
+              ${(l.day || "Hari").slice(0, 3)}
+            </span>
+            <div>
+              <p class="font-bold text-slate-800">${l.day ? l.day + ', ' : ''}${l.date || '-'}</p>
+              <p class="text-[11px] text-slate-500 font-medium"><i class="fa-regular fa-clock mr-1 text-slate-400"></i>Pukul ${l.time || '-'} WIB</p>
+            </div>
+          </div>
+          <button onclick="deleteLogEntry(${l.id}, '${escapeName(name)}')" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white transition cursor-pointer" title="Hapus catatan ini">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        `;
+        list.appendChild(item);
+      });
+    }
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function closeMemberHistoryModal() {
+  const modal = document.getElementById("memberHistoryModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function deleteLogEntry(logId, name) {
+  if (!state.isAdmin) return;
+  if (!confirm(`Hapus 1 catatan adzan ini untuk ${name}?`)) return;
+
+  const month = getActiveMonth();
+  const idx = (month.logs || []).findIndex(l => l.id == logId);
+  if (idx !== -1) {
+    month.logs.splice(idx, 1);
+  }
+
+  if (month.counts && month.counts[name] !== undefined) {
+    month.counts[name] = Math.max(0, month.counts[name] - 1);
+  }
+
+  StorageManager.save(state.data);
+  renderApp();
+  openMemberHistoryModal(name);
+  showToast(`1 catatan riwayat ${name} berhasil dihapus.`);
+}
+
 /**
  * =========================================================================
  * 5. TAB 3: KELOLA PETUGAS & MINGGU (KHUSUS ADMIN)
@@ -831,7 +897,7 @@ function fallbackCopy(text) {
 function renderKelolaTab() {
   if (!state.isAdmin) return;
   renderManageMembers();
-  renderAdminWeekCards();
+  renderAdminMonthCards();
 }
 
 function renderManageMembers() {
@@ -976,20 +1042,18 @@ function handleMemberFormSubmit(event) {
 
     state.data.members[idx] = { name: cleanName, email: cleanEmail };
 
-    // Update jika nama berubah di data bulan/minggu
+    // Update jika nama berubah di data bulan
     if (cleanName !== oldName) {
       Object.values(state.data.months).forEach(m => {
-        (m.weeks || []).forEach(w => {
-          if (w.counts && w.counts[oldName] !== undefined) {
-            w.counts[cleanName] = w.counts[oldName];
-            delete w.counts[oldName];
-          }
-          if (w.logs) {
-            w.logs.forEach(l => {
-              if (l.name === oldName) l.name = cleanName;
-            });
-          }
-        });
+        if (m.counts && m.counts[oldName] !== undefined) {
+          m.counts[cleanName] = m.counts[oldName];
+          delete m.counts[oldName];
+        }
+        if (m.logs) {
+          m.logs.forEach(l => {
+            if (l.name === oldName) l.name = cleanName;
+          });
+        }
       });
     }
 
@@ -1057,16 +1121,22 @@ function removeMember(name) {
   }
 }
 
-function renderAdminWeekCards() {
-  const container = document.getElementById("adminWeekSelectorCards");
+function renderAdminMonthCards() {
+  const container = document.getElementById("adminMonthSelectorCards");
   if (!container) return;
   container.innerHTML = "";
 
-  const month = getActiveMonth();
-  const weeks = month.weeks || [];
+  const months = Object.values(state.data.months || {});
+  if (months.length === 0) {
+    container.innerHTML = `<p class="text-xs text-slate-400 italic col-span-2 p-3">Belum ada periode bulan. Silakan tambah bulan baru.</p>`;
+    return;
+  }
 
-  weeks.forEach(w => {
-    const isActive = w.id === state.data.activeWeekId;
+  months.forEach(m => {
+    const isActive = m.id === state.data.activeMonth;
+    const totalAdzan = Object.values(m.counts || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    const totalPetugas = Object.values(m.counts || {}).filter(c => c > 0).length;
+
     const card = document.createElement("div");
     card.className = `p-4 rounded-2xl border transition flex items-center justify-between ${
       isActive 
@@ -1077,15 +1147,18 @@ function renderAdminWeekCards() {
     card.innerHTML = `
       <div>
         <div class="flex items-center gap-2">
-          <h4 class="font-bold text-slate-800 text-sm">${w.title}</h4>
-          ${isActive ? '<span class="text-[10px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full">Aktif Presensi</span>' : ''}
+          <h4 class="font-bold text-slate-800 text-sm">${m.name}</h4>
+          ${isActive ? '<span class="text-[10px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full">Bulan Aktif</span>' : ''}
         </div>
-        <p class="text-xs text-slate-500 mt-0.5">${w.note || 'Tidak ada catatan tanggal'}</p>
+        <p class="text-xs text-slate-500 mt-0.5">
+          <span class="font-semibold text-emerald-700">${totalAdzan}x</span> total adzan • <span class="font-semibold text-slate-700">${totalPetugas}</span> petugas aktif
+        </p>
       </div>
 
       <div class="flex items-center space-x-1.5">
-        ${!isActive ? `<button onclick="setActiveWeek('${w.id}')" class="px-3 py-1.5 bg-white hover:bg-emerald-600 hover:text-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">Aktifkan</button>` : ''}
-        <button onclick="editWeekNote('${w.id}')" class="p-1.5 text-slate-400 hover:text-emerald-700 text-xs" title="Ubah Judul/Tanggal"><i class="fa-solid fa-pen"></i></button>
+        ${!isActive ? `<button onclick="setActiveMonth('${m.id}')" class="px-3 py-1.5 bg-white hover:bg-emerald-600 hover:text-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer">Aktifkan</button>` : ''}
+        <button onclick="editMonthName('${m.id}')" class="p-1.5 text-slate-400 hover:text-emerald-700 text-xs cursor-pointer" title="Ubah Nama Bulan"><i class="fa-solid fa-pen"></i></button>
+        ${!isActive && Object.keys(state.data.months || {}).length > 1 ? `<button onclick="deleteMonth('${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 text-xs cursor-pointer" title="Hapus Periode Bulan"><i class="fa-solid fa-trash-can"></i></button>` : ''}
       </div>
     `;
 
@@ -1093,80 +1166,69 @@ function renderAdminWeekCards() {
   });
 }
 
-function setActiveWeek(weekId) {
+function setActiveMonth(monthId) {
   if (!state.isAdmin) return;
-  state.data.activeWeekId = weekId;
+  state.data.activeMonth = monthId;
   StorageManager.save(state.data);
   renderApp();
-  showToast("Minggu aktif untuk presensi telah diganti.");
+  showToast("Periode bulan aktif presensi telah diganti.");
 }
 
-function editWeekNote(weekId) {
+function editMonthName(monthId) {
   if (!state.isAdmin) return;
-  const month = getActiveMonth();
-  const w = (month.weeks || []).find(item => item.id === weekId);
-  if (!w) return;
-
-  const newTitle = prompt("Nama Minggu:", w.title);
-  if (newTitle) w.title = newTitle;
-  const newNote = prompt("Catatan Tanggal:", w.note || "");
-  if (newNote !== null) w.note = newNote;
-
-  StorageManager.save(state.data);
-  renderApp();
-  showToast("Informasi minggu diperbarui.");
+  const m = state.data.months && state.data.months[monthId];
+  if (!m) return;
+  const newName = prompt("Ubah Nama Bulan & Tahun:", m.name);
+  if (newName && newName.trim()) {
+    m.name = newName.trim();
+    StorageManager.save(state.data);
+    renderApp();
+    showToast("Nama bulan berhasil diperbarui.");
+  }
 }
 
-function promptNewWeek() {
+function deleteMonth(monthId) {
   if (!state.isAdmin) return;
-
-  const month = getActiveMonth();
-  const nextNum = (month.weeks || []).length + 1;
-  const title = prompt("Nama Minggu (contoh: Minggu Ke-" + nextNum + "):", "Minggu Ke-" + nextNum);
-  if (!title) return;
-  const note = prompt("Catatan tanggal (contoh: Mulai 26 Juli 2026):", "");
-
-  const newWeek = {
-    id: "w_" + Date.now(),
-    title: title,
-    note: note || "",
-    counts: {},
-    logs: []
-  };
-
-  month.weeks.push(newWeek);
-  state.data.activeWeekId = newWeek.id;
-  StorageManager.save(state.data);
-  renderApp();
-  showToast("Minggu baru berhasil ditambahkan!");
+  const m = state.data.months && state.data.months[monthId];
+  if (!m) return;
+  if (confirm(`Yakin ingin menghapus periode "${m.name}" beserta seluruh data riwayatnya?`)) {
+    delete state.data.months[monthId];
+    if (state.data.activeMonth === monthId) {
+      const remaining = Object.keys(state.data.months || {});
+      state.data.activeMonth = remaining[0] || "2026-11";
+    }
+    StorageManager.save(state.data);
+    renderApp();
+    showToast(`Periode "${m.name}" telah dihapus.`);
+  }
 }
 
 function promptNewMonth() {
   if (!state.isAdmin) return;
 
-  const name = prompt("Nama Bulan & Tahun (contoh: Agustus 2026):");
+  const name = prompt("Nama Bulan & Tahun Baru (contoh: Desember 2026):");
   if (!name || !name.trim()) return;
 
   const id = "month_" + Date.now();
+  if (!state.data.months) state.data.months = {};
+
+  const initialCounts = {};
+  (state.data.members || []).forEach(m => {
+    const mName = typeof m === "object" ? m.name : m;
+    initialCounts[mName] = 0;
+  });
+
   state.data.months[id] = {
     id: id,
     name: name.trim(),
-    weeks: [
-      {
-        id: "w_1",
-        title: "Minggu Ke-1",
-        note: "Mulai awal bulan",
-        counts: {},
-        logs: []
-      }
-    ]
+    counts: initialCounts,
+    logs: []
   };
 
   state.data.activeMonth = id;
-  state.data.activeWeekId = "w_1";
   StorageManager.save(state.data);
   renderApp();
-  showToast(`Bulan "${name}" berhasil dibuat!`);
+  showToast(`Bulan "${name.trim()}" berhasil dibuat dan diaktifkan!`);
 }
 
 /**
@@ -1248,15 +1310,30 @@ async function handleExcelFile(e) {
   if (!file) return;
 
   try {
-    const parsedWeeks = await ExcelHandler.importFromExcel(file);
-    if (!parsedWeeks || parsedWeeks.length === 0) {
-      showToast("Gagal membaca minggu dari Excel.", "error");
+    const result = await ExcelHandler.importFromExcel(file);
+    if (!result || !result.counts || Object.keys(result.counts).length === 0) {
+      showToast("Gagal membaca data dari Excel.", "error");
       return;
     }
 
     const month = getActiveMonth();
-    if (confirm(`Ditemukan ${parsedWeeks.length} data minggu. Timpa ke bulan ${month.name}?`)) {
-      month.weeks = parsedWeeks;
+    if (confirm(`Timpa data bulan ${month.name} dengan data dari file Excel?`)) {
+      month.counts = result.counts;
+      if (result.logs && result.logs.length > 0) {
+        month.logs = result.logs;
+      }
+
+      // Pastikan semua nama di excel terdaftar di daftar anggota
+      Object.keys(result.counts).forEach(name => {
+        const exists = (state.data.members || []).some(m => (typeof m === 'object' ? m.name : m).toLowerCase() === name.toLowerCase());
+        if (!exists) {
+          state.data.members.push({
+            name: name,
+            email: `${name.toLowerCase().replace(/\s+/g, '')}@gmail.com`
+          });
+        }
+      });
+
       StorageManager.save(state.data);
       renderApp();
       showToast("Sukses impor data dari Excel!");
@@ -1270,7 +1347,7 @@ async function handleExcelFile(e) {
 }
 
 function loadSampleText() {
-  const sample = `List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
+  const sample = `List Rekap Ubudiyah
 1. Arsal = 
 2. Rohman = 
 3. Alan = Zuhur, ashar, magrib, isya, ashar
@@ -1296,22 +1373,33 @@ function processPastedText() {
 
   const parsed = TextParser.parseFullText(text);
   if (!parsed || parsed.length === 0) {
-    showToast("Tidak ada format minggu yang terdeteksi.", "error");
+    showToast("Tidak ada format rekap/minggu yang terdeteksi.", "error");
     return;
   }
 
   const month = getActiveMonth();
-  parsed.forEach(p => {
-    const newW = {
-      id: "w_paste_" + Date.now() + "_" + p.index,
-      title: p.title,
-      note: p.extractedDate || "",
-      counts: p.counts,
-      logs: []
-    };
-    month.weeks.push(newW);
+  if (!month.counts) month.counts = {};
+  if (!month.logs) month.logs = [];
 
-    Object.keys(p.counts).forEach(name => {
+  let addedTotal = 0;
+  parsed.forEach(p => {
+    Object.entries(p.counts || {}).forEach(([name, count]) => {
+      if (count > 0) {
+        month.counts[name] = (month.counts[name] || 0) + count;
+        addedTotal += count;
+        
+        for (let i = 0; i < count; i++) {
+          month.logs.push({
+            id: Date.now() + Math.floor(Math.random() * 100000),
+            name: name,
+            day: "Catatan WA",
+            date: p.extractedDate || p.title || "Teks WA",
+            time: "-",
+            timestamp: Date.now()
+          });
+        }
+      }
+
       const exists = (state.data.members || []).some(m => (typeof m === 'object' ? m.name : m).toLowerCase() === name.toLowerCase());
       if (!exists) {
         state.data.members.push({
@@ -1324,7 +1412,7 @@ function processPastedText() {
 
   StorageManager.save(state.data);
   renderApp();
-  showToast(`Berhasil menambahkan ${parsed.length} minggu ke rekap!`);
+  showToast(`Berhasil menambahkan ${addedTotal}x adzan ke bulan ${month.name}!`);
   switchTab("rekap");
 }
 

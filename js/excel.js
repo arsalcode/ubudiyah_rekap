@@ -14,96 +14,76 @@ class ExcelHandler {
     }
 
     const wb = XLSX.utils.book_new();
-    const weeks = monthData.weeks || [];
-
-    // Kumpulkan semua nama petugas
-    const allNames = new Set();
-    weeks.forEach(w => {
-      Object.keys(w.counts || {}).forEach(name => allNames.add(name));
-    });
+    const counts = monthData.counts || {};
+    const logs = monthData.logs || [];
+    const allNames = Object.keys(counts);
 
     // 1. DATA SHEET 1: REKAP BULANAN
-    const headerRow = ["No", "Nama Petugas"];
-    weeks.forEach((w, idx) => {
-      headerRow.push(w.title || `Minggu ${idx + 1}`);
-    });
-    headerRow.push("Total Adzan Bulan Ini");
-
     const summaryRows = [
-      ["REKAPITULASI UBUDIYAH (TOTAL ADZAN)"],
+      ["REKAPITULASI UBUDIYAH BULANAN (TOTAL ADZAN)"],
       [`Periode: ${monthData.name || monthName}`],
       [`Dicetak pada: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`],
       [],
-      headerRow
+      ["No", "Nama Petugas", "Total Adzan 1 Bulan", "Ringkasan Hari Bertugas"]
     ];
 
     let no = 1;
-    const weekTotals = new Array(weeks.length).fill(0);
     let grandTotal = 0;
 
     allNames.forEach(name => {
-      const row = [no++, name];
-      let memberTotal = 0;
+      const total = counts[name] || 0;
+      grandTotal += total;
 
-      weeks.forEach((w, wIdx) => {
-        const count = (w.counts && w.counts[name]) || 0;
-        row.push(count);
-        memberTotal += count;
-        weekTotals[wIdx] += count;
+      // Ambil daftar hari bertugas dari logs
+      const memberLogs = logs.filter(l => l.name === name);
+      const daysCount = {};
+      memberLogs.forEach(l => {
+        const d = l.day || "Hari";
+        daysCount[d] = (daysCount[d] || 0) + 1;
       });
+      const daysStr = Object.entries(daysCount)
+        .map(([d, c]) => `${d} (${c}x)`)
+        .join(", ") || (total > 0 ? `${total}x adzan tercatat` : "-");
 
-      row.push(memberTotal);
-      grandTotal += memberTotal;
-      summaryRows.push(row);
+      summaryRows.push([no++, name, total, daysStr]);
     });
 
-    // Baris Total Bawah
-    const totalRow = ["TOTAL", "Semua Petugas"];
-    weekTotals.forEach(t => totalRow.push(t));
-    totalRow.push(grandTotal);
-    summaryRows.push(totalRow);
+    summaryRows.push(["TOTAL", "Seluruh Petugas", grandTotal, ""]);
 
     const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
-    
-    // Auto width
-    const cols = [{ wch: 6 }, { wch: 22 }];
-    weeks.forEach(() => cols.push({ wch: 14 }));
-    cols.push({ wch: 20 });
-    wsSummary["!cols"] = cols;
-
+    wsSummary["!cols"] = [{ wch: 6 }, { wch: 22 }, { wch: 20 }, { wch: 40 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Rekap Bulanan");
 
-    // 2. DATA SHEET 2: RIWAYAT LOG
+    // 2. DATA SHEET 2: RIWAYAT BERTUGAS LENGKAP
     const logRows = [
-      ["RIWAYAT LOG KLIK PRESENSI ADZAN"],
+      ["RIWAYAT DETAIL PETUGAS BERTUGAS"],
       [`Periode: ${monthData.name || monthName}`],
       [],
-      ["No", "Waktu", "Nama Petugas", "Minggu Ke", "Keterangan"]
+      ["No", "Nama Petugas", "Hari", "Tanggal", "Jam WIB", "Keterangan"]
     ];
 
     let logNo = 1;
-    weeks.forEach(w => {
-      (w.logs || []).forEach(lg => {
-        logRows.push([
-          logNo++,
-          lg.time || "-",
-          lg.name || "-",
-          w.title || "-",
-          "+1 Adzan"
-        ]);
-      });
+    logs.forEach(lg => {
+      logRows.push([
+        logNo++,
+        lg.name || "-",
+        lg.day || "-",
+        lg.date || "-",
+        lg.time ? `${lg.time} WIB` : "-",
+        "+1 Adzan"
+      ]);
     });
 
     const wsLog = XLSX.utils.aoa_to_sheet(logRows);
-    wsLog["!cols"] = [{ wch: 6 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 16 }];
-    XLSX.utils.book_append_sheet(wb, wsLog, "Riwayat Log");
+    wsLog["!cols"] = [{ wch: 6 }, { wch: 22 }, { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, wsLog, "Riwayat Bertugas");
 
     const cleanFileName = `Rekap_Ubudiyah_${(monthData.name || "Bulan").replace(/\s+/g, "_")}.xlsx`;
     XLSX.writeFile(wb, cleanFileName);
   }
 
   /**
-   * Impor dari file Excel
+   * Impor dari file Excel (Mendukung format Rekap Bulanan baru dan lama)
    */
   static async importFromExcel(file) {
     return new Promise((resolve, reject) => {
@@ -123,7 +103,7 @@ class ExcelHandler {
           // Cari header kolom
           let headerIdx = -1;
           for (let i = 0; i < json.length; i++) {
-            if (json[i] && json[i][1] === "Nama Petugas") {
+            if (json[i] && (json[i][1] === "Nama Petugas" || json[i][0] === "Nama Petugas")) {
               headerIdx = i;
               break;
             }
@@ -134,34 +114,63 @@ class ExcelHandler {
           }
 
           const header = json[headerIdx];
-          const weekNames = [];
-          for (let c = 2; c < header.length; c++) {
-            const colName = String(header[c] || "").trim();
-            if (colName && !colName.toLowerCase().includes("total")) {
-              weekNames.push({ colIndex: c, title: colName });
+          const nameColIdx = header[1] === "Nama Petugas" ? 1 : 0;
+          const counts = {};
+          const logs = [];
+
+          // Cek apakah ada kolom "Total Adzan"
+          let totalColIdx = -1;
+          for (let c = 0; c < header.length; c++) {
+            const h = String(header[c] || "").toLowerCase();
+            if (h.includes("total adzan") || (h.includes("total") && c > nameColIdx)) {
+              totalColIdx = c;
+              break;
             }
           }
 
-          const parsedWeeks = weekNames.map((w, idx) => ({
-            id: `w_imp_${idx + 1}`,
-            title: w.title,
-            note: "Diimpor dari Excel",
-            counts: {},
-            logs: []
-          }));
+          // Cek juga sheet "Riwayat Bertugas" jika ada
+          if (workbook.Sheets["Riwayat Bertugas"]) {
+            const logJson = XLSX.utils.sheet_to_json(workbook.Sheets["Riwayat Bertugas"], { header: 1 });
+            let logHeaderIdx = -1;
+            for (let i = 0; i < logJson.length; i++) {
+              if (logJson[i] && logJson[i][1] === "Nama Petugas") {
+                logHeaderIdx = i;
+                break;
+              }
+            }
+            if (logHeaderIdx !== -1) {
+              for (let r = logHeaderIdx + 1; r < logJson.length; r++) {
+                const row = logJson[r];
+                if (!row || !row[1]) continue;
+                logs.push({
+                  id: Date.now() + r,
+                  name: String(row[1]).trim(),
+                  day: String(row[2] || "-").trim(),
+                  date: String(row[3] || "-").trim(),
+                  time: String(row[4] || "-").replace(/WIB/i, "").trim(),
+                  timestamp: Date.now()
+                });
+              }
+            }
+          }
 
           for (let r = headerIdx + 1; r < json.length; r++) {
             const row = json[r];
-            if (!row || !row[1] || String(row[0]).toUpperCase() === "TOTAL") continue;
+            if (!row || !row[nameColIdx] || String(row[0]).toUpperCase() === "TOTAL" || String(row[nameColIdx]).toUpperCase() === "TOTAL") continue;
             
-            const memberName = String(row[1]).trim();
-            weekNames.forEach((w, wIdx) => {
-              const val = parseInt(row[w.colIndex], 10) || 0;
-              parsedWeeks[wIdx].counts[memberName] = val;
-            });
+            const memberName = String(row[nameColIdx]).trim();
+            if (totalColIdx !== -1) {
+              counts[memberName] = parseInt(row[totalColIdx], 10) || 0;
+            } else {
+              let sum = 0;
+              for (let c = nameColIdx + 1; c < row.length; c++) {
+                sum += parseInt(row[c], 10) || 0;
+              }
+              counts[memberName] = sum;
+            }
           }
 
-          resolve(parsedWeeks);
+          resolve({ counts, logs });
         } catch (err) {
           reject(err);
         }

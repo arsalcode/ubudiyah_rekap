@@ -21,101 +21,63 @@ const INITIAL_DATA_SIMPLE = {
   currentEmail: "arsalah18m@gmail.com",
   adminPin: "1234",        // PIN Admin
   googleClientId: "",      // Opsional: Google OAuth Client ID untuk Google One Tap
-  activeMonth: "2026-07",
-  activeWeekId: "w1",
+  activeMonth: "2026-11",  // Bulan aktif default: November 2026
   members: [...DEFAULT_MEMBERS],
   months: {
+    "2026-11": {
+      id: "2026-11",
+      name: "November 2026",
+      counts: {
+        "Arsal": 0,
+        "Rohman": 0,
+        "Alan": 0,
+        "Kang Angga": 0,
+        "Rizki": 0,
+        "Kang Nabill": 0,
+        "Tami": 0,
+        "Radit": 0,
+        "Rama": 0,
+        "Teguh": 0
+      },
+      logs: []
+    },
     "2026-07": {
       id: "2026-07",
       name: "Juli 2026",
-      weeks: [
-        {
-          id: "w1",
-          title: "Minggu Ke-1",
-          note: "Mulai Minggu 28 Juni 2026",
-          counts: {
-            "Arsal": 0,
-            "Rohman": 0,
-            "Alan": 5,
-            "Kang Angga": 0,
-            "Rizki": 0,
-            "Kang Nabill": 0,
-            "Tami": 0,
-            "Radit": 4,
-            "Rama": 4,
-            "Teguh": 4
-          },
-          logs: []
-        },
-        {
-          id: "w2",
-          title: "Minggu Ke-2",
-          note: "Mulai Minggu 5 Juli 2026",
-          counts: {
-            "Arsal": 0,
-            "Rohman": 0,
-            "Alan": 6,
-            "Kang Angga": 0,
-            "Rizki": 0,
-            "Kang Nabill": 0,
-            "Tami": 0,
-            "Radit": 3,
-            "Rama": 4,
-            "Teguh": 4
-          },
-          logs: []
-        },
-        {
-          id: "w3",
-          title: "Minggu Ke-3",
-          note: "Mulai Minggu 12 Juli 2026",
-          counts: {
-            "Arsal": 0,
-            "Rohman": 0,
-            "Alan": 4,
-            "Kang Angga": 0,
-            "Rizki": 0,
-            "Kang Nabill": 0,
-            "Tami": 0,
-            "Radit": 3,
-            "Rama": 4,
-            "Teguh": 4
-          },
-          logs: []
-        },
-        {
-          id: "w4",
-          title: "Minggu Ke-4",
-          note: "Mulai Minggu 19 Juli 2026",
-          counts: {
-            "Arsal": 0,
-            "Rohman": 0,
-            "Alan": 3,
-            "Kang Angga": 0,
-            "Rizki": 0,
-            "Kang Nabill": 0,
-            "Tami": 0,
-            "Radit": 3,
-            "Rama": 4,
-            "Teguh": 4
-          },
-          logs: []
-        }
+      counts: {
+        "Alan": 18,
+        "Rama": 16,
+        "Teguh": 16,
+        "Radit": 13,
+        "Arsal": 0,
+        "Rohman": 0,
+        "Kang Angga": 0,
+        "Rizki": 0,
+        "Kang Nabill": 0,
+        "Tami": 0
+      },
+      logs: [
+        { id: 101, name: "Alan", day: "Senin", date: "29 Jun 2026", time: "12:10" },
+        { id: 102, name: "Alan", day: "Rabu", date: "1 Jul 2026", time: "15:20" },
+        { id: 103, name: "Radit", day: "Selasa", date: "30 Jun 2026", time: "18:15" },
+        { id: 104, name: "Rama", day: "Kamis", date: "2 Jul 2026", time: "19:30" },
+        { id: 105, name: "Teguh", day: "Jumat", date: "3 Jul 2026", time: "12:05" }
       ]
     }
   }
 };
 
-const STORAGE_KEY = "ubudiyah_simple_v4";
+const STORAGE_KEY = "ubudiyah_simple_v5";
 
 class StorageManager {
   static load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // Periksa versi v3 atau v2 sebelumnya untuk dimigrasikan
+      // Periksa versi v4, v3, atau v2 sebelumnya untuk dimigrasikan
+      const prevV4 = localStorage.getItem("ubudiyah_simple_v4");
       const prevV3 = localStorage.getItem("ubudiyah_simple_v3");
       const prevV2 = localStorage.getItem("ubudiyah_simple_v2");
-      const prevRaw = prevV3 || prevV2;
+      const prevRaw = prevV4 || prevV3 || prevV2;
       
       if (prevRaw) {
         try {
@@ -145,7 +107,6 @@ class StorageManager {
               email: defaultMatch ? defaultMatch.email : `${m.toLowerCase().replace(/\s+/g, '')}@gmail.com`
             };
           } else if (typeof m === "object" && m !== null) {
-            // Perbarui email Arsal jika masih menggunakan arsal@gmail.com
             if (m.name && m.name.toLowerCase() === "arsal" && (!m.email || m.email === "arsal@gmail.com")) {
               m.email = "arsalah18m@gmail.com";
             }
@@ -163,6 +124,21 @@ class StorageManager {
       if (!data.currentEmail || data.currentEmail === "arsal@gmail.com") {
         data.currentEmail = "arsalah18m@gmail.com";
         data.currentUser = "Arsal";
+      }
+
+      // Pastikan data bulan valid
+      if (!data.months || Object.keys(data.months).length === 0) {
+        data.months = JSON.parse(JSON.stringify(INITIAL_DATA_SIMPLE.months));
+      }
+
+      // Pastikan setiap bulan memiliki counts dan logs
+      Object.values(data.months).forEach(m => {
+        if (!m.counts) m.counts = {};
+        if (!m.logs) m.logs = [];
+      });
+
+      if (!data.activeMonth || !data.months[data.activeMonth]) {
+        data.activeMonth = Object.keys(data.months)[0];
       }
 
       if (!data.adminPin) data.adminPin = "1234";
@@ -184,10 +160,9 @@ class StorageManager {
 
   static migrateFromPrevious(old) {
     const fresh = JSON.parse(JSON.stringify(INITIAL_DATA_SIMPLE));
-    if (old.months) fresh.months = old.months;
     if (old.adminPin) fresh.adminPin = old.adminPin;
-    if (old.activeMonth) fresh.activeMonth = old.activeMonth;
-    if (old.activeWeekId) fresh.activeWeekId = old.activeWeekId;
+    if (old.currentUser) fresh.currentUser = old.currentUser;
+    if (old.currentEmail) fresh.currentEmail = old.currentEmail;
 
     if (old.members && Array.isArray(old.members)) {
       fresh.members = old.members.map(m => {
@@ -204,8 +179,55 @@ class StorageManager {
       });
     }
 
-    fresh.currentUser = "Arsal";
-    fresh.currentEmail = "arsalah18m@gmail.com";
+    // Migrasi bulan dari format mingguan ke bulanan murni
+    if (old.months && typeof old.months === "object") {
+      fresh.months = {};
+      Object.entries(old.months).forEach(([mId, mData]) => {
+        if (mData.weeks && Array.isArray(mData.weeks)) {
+          const newCounts = {};
+          const newLogs = [];
+
+          mData.weeks.forEach(w => {
+            Object.entries(w.counts || {}).forEach(([name, c]) => {
+              newCounts[name] = (newCounts[name] || 0) + c;
+            });
+            (w.logs || []).forEach(l => {
+              newLogs.push({
+                id: l.id || Date.now() + Math.random(),
+                name: l.name,
+                day: l.day || (l.date ? l.date.split(",")[0] : "Senin"),
+                date: l.date || "Juli 2026",
+                time: l.time || "12:00"
+              });
+            });
+          });
+
+          fresh.months[mId] = {
+            id: mId,
+            name: mData.name || mId,
+            counts: newCounts,
+            logs: newLogs
+          };
+        } else {
+          fresh.months[mId] = {
+            id: mId,
+            name: mData.name || mId,
+            counts: mData.counts || {},
+            logs: mData.logs || []
+          };
+        }
+      });
+
+      // Pastikan November 2026 ada
+      if (!fresh.months["2026-11"]) {
+        fresh.months["2026-11"] = JSON.parse(JSON.stringify(INITIAL_DATA_SIMPLE.months["2026-11"]));
+      }
+      fresh.activeMonth = old.activeMonth || "2026-11";
+      if (!fresh.months[fresh.activeMonth]) {
+        fresh.activeMonth = "2026-11";
+      }
+    }
+
     return fresh;
   }
 }

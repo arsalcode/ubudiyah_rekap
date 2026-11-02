@@ -105,7 +105,7 @@
 
         <button data-tab="kelola" class="nav-tab-btn py-1.5 px-3 rounded-lg transition flex items-center space-x-1.5 text-emerald-200 hover:bg-emerald-800">
           <i class="fa-solid fa-user-gear"></i>
-          <span>Kelola Petugas</span>
+          <span>Kelola Petugas & Bulan</span>
         </button>
 
         <button data-tab="database" class="nav-tab-btn py-1.5 px-3 rounded-lg transition flex items-center space-x-1.5 text-emerald-200 hover:bg-emerald-800">
@@ -326,29 +326,29 @@
           <h3 class="text-xs sm:text-sm font-bold text-slate-800 mt-0.5 truncate" id="statTopMember">-</h3>
         </div>
         <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-center">
-          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Jumlah Minggu</p>
-          <h3 class="text-xl sm:text-2xl font-black text-slate-700 mt-0.5" id="statWeeksCount">0</h3>
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Petugas Bertugas</p>
+          <h3 class="text-xl sm:text-2xl font-black text-slate-700 mt-0.5" id="statActiveMembersCount">0 Orang</h3>
         </div>
       </div>
 
-      <!-- Tabel Master Rekapitulasi -->
+      <!-- Tabel Master Rekapitulasi Bulanan -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 to-white">
           <div>
             <h3 class="text-sm sm:text-base font-bold text-slate-800">
-              Rekapitulasi Adzan Seluruh Petugas: <span class="text-emerald-700" id="tableMonthLabel">Juli 2026</span>
+              Rekapitulasi Adzan 1 Bulan: <span class="text-emerald-700" id="tableMonthLabel">November 2026</span>
             </h3>
-            <p class="text-xs text-slate-500">Tabel perhitungan mingguan dan total akhir bulan.</p>
+            <p class="text-xs text-slate-500">Akumulasi total hitungan satu bulan penuh beserta riwayat hari bertugas.</p>
           </div>
           <div class="no-print">
-            <input type="text" id="tableSearchInput" placeholder="Cari nama petugas..." class="text-xs px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 w-40">
+            <input type="text" id="tableSearchInput" placeholder="Cari nama petugas..." class="text-xs px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 w-44">
           </div>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs sm:text-sm">
             <thead class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200" id="rekapTableHead">
-              <!-- Kolom Minggu diisi dinamis -->
+              <!-- Kolom diisi dinamis -->
             </thead>
             <tbody id="rekapTableBody" class="divide-y divide-slate-100">
               <!-- Baris diisi dinamis -->
@@ -403,20 +403,20 @@
         </div>
       </div>
 
-      <!-- Kelola Minggu Presensi yang Sedang Berjalan -->
+      <!-- Kelola Periode Bulan Presensi -->
       <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h3 class="text-base font-bold text-slate-800">Atur Minggu Presensi Aktif</h3>
-            <p class="text-xs text-slate-500">Pilih minggu mana yang saat ini sedang berlangsung untuk pencatatan tombol adzan.</p>
+            <h3 class="text-base font-bold text-slate-800">Kelola Periode Bulan Presensi</h3>
+            <p class="text-xs text-slate-500">Pilih bulan aktif untuk pencatatan adzan atau buat data bulan baru (contoh: November 2026, Desember 2026, dll.).</p>
           </div>
-          <button onclick="promptNewWeek()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center space-x-1.5 shadow-2xs">
+          <button onclick="promptNewMonth()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center space-x-1.5 shadow-2xs cursor-pointer">
             <i class="fa-solid fa-calendar-plus"></i>
-            <span>Tambah Minggu Baru</span>
+            <span>Tambah Bulan Baru</span>
           </button>
         </div>
 
-        <div id="adminWeekSelectorCards" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div id="adminMonthSelectorCards" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <!-- Diisi dinamis -->
         </div>
       </div>
@@ -629,6 +629,42 @@ List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 3: DETAIL RIWAYAT BERTUGAS PETUGAS -->
+  <!-- ========================================== -->
+  <div id="memberHistoryModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl fade-in text-left">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shrink-0">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div>
+            <h3 id="memberHistoryTitle" class="text-base font-black text-slate-800">Riwayat Bertugas: Arsal</h3>
+            <p id="memberHistorySubtitle" class="text-[11px] text-slate-500 font-medium">Periode: November 2026</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeMemberHistoryModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between px-1 text-xs font-bold text-slate-600">
+          <span>Daftar Hari & Jam Adzan:</span>
+          <span id="memberHistoryCountBadge" class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-black">0x Adzan</span>
+        </div>
+        <div id="memberHistoryList" class="max-h-72 overflow-y-auto space-y-2 pr-1">
+          <!-- Diisi dinamis -->
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 text-right">
+        <button type="button" onclick="closeMemberHistoryModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer">
+          Tutup
+        </button>
+      </div>
     </div>
   </div>
 
