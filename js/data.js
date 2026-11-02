@@ -17,8 +17,8 @@ const DEFAULT_MEMBERS = [
 ];
 
 const INITIAL_DATA_SIMPLE = {
-  currentUser: "Arsal",
-  currentEmail: "arsalah18m@gmail.com",
+  currentUser: null,       // Belum ada user sebelum login email di browser HP tersebut
+  currentEmail: null,      // Belum ada email sebelum login email di browser HP tersebut
   adminPin: "1234",        // PIN Admin
   googleClientId: "",      // Opsional: Google OAuth Client ID untuk Google One Tap
   activeMonth: "2026-11",  // Bulan aktif default: November 2026
@@ -120,10 +120,20 @@ class StorageManager {
         });
       }
 
-      // Pastikan email aktif Arsal adalah arsalah18m@gmail.com
-      if (!data.currentEmail || data.currentEmail === "arsal@gmail.com") {
-        data.currentEmail = "arsalah18m@gmail.com";
-        data.currentUser = "Arsal";
+      // Ambil akun petugas yang tersimpan khusus di browser perangkat ini
+      const savedDeviceEmail = localStorage.getItem("ubudiyah_device_auth_email");
+      if (savedDeviceEmail) {
+        const matched = data.members.find(m => (typeof m === 'object' ? m.email : '').toLowerCase() === savedDeviceEmail.toLowerCase());
+        if (matched) {
+          data.currentUser = matched.name;
+          data.currentEmail = matched.email;
+        } else {
+          data.currentUser = null;
+          data.currentEmail = null;
+        }
+      } else {
+        data.currentUser = null;
+        data.currentEmail = null;
       }
 
       // Pastikan data bulan valid

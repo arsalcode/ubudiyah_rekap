@@ -330,10 +330,11 @@ function handleEmailLogin(event) {
     if (errBox) errBox.classList.add("hidden");
     state.data.currentEmail = matched.email;
     state.data.currentUser = matched.name;
+    localStorage.setItem("ubudiyah_device_auth_email", matched.email);
     sessionClickCount = 0;
     StorageManager.save(state.data);
     renderApp();
-    showToast(`Alhamdulillah! Selamat datang, ${matched.name}.`);
+    showToast(`Alhamdulillah! Selamat datang, ${matched.name}. Browser HP ini otomatis mengingat akun Anda.`);
   } else {
     if (errBox) {
       errBox.classList.remove("hidden");
@@ -400,10 +401,11 @@ function handleGoogleCredentialResponse(response) {
       if (errBox) errBox.classList.add("hidden");
       state.data.currentEmail = matched.email;
       state.data.currentUser = matched.name;
+      localStorage.setItem("ubudiyah_device_auth_email", matched.email);
       sessionClickCount = 0;
       StorageManager.save(state.data);
       renderApp();
-      showToast(`Alhamdulillah! Akun Google Chrome terverifikasi: ${matched.name} 🕌`);
+      showToast(`Alhamdulillah! Akun Google terverifikasi: ${matched.name}. Tersimpan di browser ini 🕌`);
     } else {
       if (errBox) {
         errBox.classList.remove("hidden");
@@ -1293,6 +1295,7 @@ function bindDeviceToSelectedMember() {
 
   state.data.currentEmail = matched.email;
   state.data.currentUser = matched.name;
+  localStorage.setItem("ubudiyah_device_auth_email", matched.email);
   sessionClickCount = 0;
   StorageManager.save(state.data);
   renderApp();
@@ -1304,10 +1307,23 @@ function resetDeviceAccount() {
   if (confirm("Lepas kaitan akun petugas di perangkat ini? Perangkat ini akan kembali meminta login email saat mode petugas dibuka.")) {
     state.data.currentUser = null;
     state.data.currentEmail = null;
+    localStorage.removeItem("ubudiyah_device_auth_email");
     sessionClickCount = 0;
     StorageManager.save(state.data);
     renderApp();
     showToast("Kaitan akun di perangkat ini telah dilepas!");
+  }
+}
+
+function handleLogoutMember() {
+  if (confirm("Keluar dari akun petugas ini di HP ini? Anda akan diminta memasukkan email lagi saat membuka presensi berikutnya.")) {
+    state.data.currentUser = null;
+    state.data.currentEmail = null;
+    localStorage.removeItem("ubudiyah_device_auth_email");
+    sessionClickCount = 0;
+    StorageManager.save(state.data);
+    renderApp();
+    showToast("Anda telah keluar. Silakan masukkan email saat bertugas.");
   }
 }
 
