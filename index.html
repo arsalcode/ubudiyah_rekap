@@ -143,41 +143,55 @@
           </p>
         </div>
 
-        <!-- Integrasi Google Sign In (Chrome Profile One Tap) -->
-        <div id="googleAuthSection" class="space-y-3">
+        <!-- Integrasi Google Sign In Resmi (Mendeteksi Profil Akun Chrome Asli) -->
+        <div id="googleAuthSection" class="space-y-4">
           <div id="googleBtnSlot" class="flex justify-center min-h-[44px]"></div>
-          
-          <div class="relative flex py-1 items-center">
-            <div class="flex-grow border-t border-slate-200"></div>
-            <span class="flex-shrink mx-3 text-[11px] text-slate-400 font-semibold uppercase tracking-wider">atau masukkan email Google</span>
-            <div class="flex-grow border-t border-slate-200"></div>
+
+          <!-- Pesan Jika Google Client ID Belum Diatur -->
+          <div id="googleSetupNotice" class="hidden p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs text-left space-y-1">
+            <p class="font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-info text-amber-600"></i>
+              Google Sign-In Perlu Client ID
+            </p>
+            <p class="text-amber-700 leading-relaxed text-[11px]">
+              Admin belum memasukkan <strong>Google Client ID</strong> di Mode Admin. Anda dapat login sementara lewat form di bawah atau masukkan Client ID di Tab Database.
+            </p>
+          </div>
+
+          <!-- Section Fallback Input Manual (Otomatis disembunyikan saat Google Client ID aktif) -->
+          <div id="manualEmailLoginSection" class="space-y-3.5 pt-1">
+            <div class="relative flex py-1 items-center">
+              <div class="flex-grow border-t border-slate-200"></div>
+              <span class="flex-shrink mx-3 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">atau masukkan email Google</span>
+              <div class="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <!-- Form Masuk dengan Email Google -->
+            <form id="emailLoginForm" onsubmit="handleEmailLogin(event)" class="space-y-3.5 text-left">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Google Petugas</label>
+                <div class="relative">
+                  <i class="fa-brands fa-google absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                  <input type="email" id="inputGoogleEmail" required placeholder="contoh: arsalah18m@gmail.com" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold rounded-xl text-sm shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
+                <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+                <span>Verifikasi Email & Masuk ke Tombol</span>
+              </button>
+            </form>
           </div>
         </div>
-
-        <!-- Form Masuk dengan Email Google -->
-        <form id="emailLoginForm" onsubmit="handleEmailLogin(event)" class="space-y-3.5 text-left">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Google (Chrome) Petugas</label>
-            <div class="relative">
-              <i class="fa-brands fa-google absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-              <input type="email" id="inputGoogleEmail" required placeholder="contoh: arsalah18m@gmail.com" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
-            </div>
-          </div>
-
-          <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold rounded-xl text-sm shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
-            <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
-            <span>Verifikasi Email & Masuk ke Tombol</span>
-          </button>
-        </form>
 
         <!-- Kotak Peringatan jika Email Tidak Terdaftar -->
         <div id="emailAuthError" class="hidden p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs text-left space-y-1">
           <p class="font-bold flex items-center gap-1.5">
             <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-            Email Tidak Terdaftar
+            Akses Ditolak
           </p>
           <p class="text-rose-600 leading-relaxed text-[11px]" id="emailAuthErrorText">
-            Email ini belum didaftarkan sebagai petugas oleh Admin. Silakan hubungi pengurus DKM.
+            Akun Google Chrome Anda belum didaftarkan sebagai petugas oleh Admin DKM.
           </p>
         </div>
 
@@ -535,6 +549,29 @@ List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
             </select>
             <button onclick="bindDeviceToSelectedMember()" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-2xs whitespace-nowrap cursor-pointer">
               <i class="fa-solid fa-link text-xs mr-1"></i> Kunci HP Ini
+            </button>
+          </div>
+        </div>
+
+        <!-- Opsi Pengaturan Google OAuth Client ID -->
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-brands fa-google text-emerald-600"></i>
+              Google OAuth Client ID (Sign-In Resmi Anti-Palsu):
+            </h4>
+            <span id="googleClientIdStatusBadge" class="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+              Belum Diatur
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-600 leading-relaxed">
+            Masukkan <strong>Client ID</strong> dari Google Cloud Console. Begitu disimpan, kolom ketik manual akan otomatis hilang dan petugas wajib login menggunakan profil akun Google asli di Chrome.
+          </p>
+          <div class="flex flex-wrap sm:flex-nowrap gap-2 pt-1">
+            <input type="text" id="inputGoogleClientId" placeholder="contoh: 123456789-xxx.apps.googleusercontent.com" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button onclick="saveGoogleClientId()" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-2xs whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-floppy-disk text-xs"></i>
+              <span>Simpan Client ID</span>
             </button>
           </div>
         </div>

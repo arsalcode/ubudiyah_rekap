@@ -349,6 +349,33 @@ function handleEmailLogin(event) {
 }
 
 function initGoogleIdentity() {
+  const btnSlot = document.getElementById("googleBtnSlot");
+  const setupNotice = document.getElementById("googleSetupNotice");
+  const manualSection = document.getElementById("manualEmailLoginSection");
+
+  const hasClientId = Boolean(state.data.googleClientId && state.data.googleClientId.trim());
+
+  if (!hasClientId) {
+    if (setupNotice) setupNotice.classList.remove("hidden");
+    if (manualSection) manualSection.classList.remove("hidden");
+    if (btnSlot) {
+      btnSlot.innerHTML = `
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-500 text-center w-full space-y-1">
+          <i class="fa-brands fa-google text-slate-400 text-xl mb-0.5 block"></i>
+          <span class="font-bold text-slate-700 block text-xs">Tombol Login Akun Google Chrome</span>
+          <span class="text-[11px] text-slate-400 block leading-relaxed">
+            Akan muncul otomatis setelah Admin memasukkan <strong>Google Client ID</strong> di Tab Database.
+          </span>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  // Jika Google Client ID sudah diatur oleh Admin:
+  if (setupNotice) setupNotice.classList.add("hidden");
+  if (manualSection) manualSection.classList.add("hidden"); // Kunci ketat: sembunyikan form input manual agar tidak bisa dipalsukan
+
   if (typeof google === "undefined" || !google.accounts || !google.accounts.id) {
     setTimeout(() => {
       if (typeof google !== "undefined" && google.accounts && google.accounts.id) {
@@ -359,20 +386,18 @@ function initGoogleIdentity() {
   }
 
   try {
-    const clientId = state.data.googleClientId || "1028726207865-dummy.apps.googleusercontent.com";
     google.accounts.id.initialize({
-      client_id: clientId,
+      client_id: state.data.googleClientId.trim(),
       callback: handleGoogleCredentialResponse,
       auto_select: true
     });
 
-    const btnSlot = document.getElementById("googleBtnSlot");
     if (btnSlot) {
       btnSlot.innerHTML = "";
       google.accounts.id.renderButton(btnSlot, {
         theme: "outline",
         size: "large",
-        width: 280,
+        width: 300,
         text: "continue_with",
         shape: "pill",
         logo_alignment: "left"
@@ -1285,6 +1310,22 @@ function renderDatabaseTab() {
       : "Tidak Ada";
   }
 
+  // Update input dan status badge Google Client ID
+  const clientIdInput = document.getElementById("inputGoogleClientId");
+  const clientIdBadge = document.getElementById("googleClientIdStatusBadge");
+  if (clientIdInput) {
+    clientIdInput.value = state.data.googleClientId || "";
+  }
+  if (clientIdBadge) {
+    if (state.data.googleClientId && state.data.googleClientId.trim()) {
+      clientIdBadge.className = "text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200";
+      clientIdBadge.textContent = "Aktif (Wajib Google)";
+    } else {
+      clientIdBadge.className = "text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200";
+      clientIdBadge.textContent = "Belum Diatur";
+    }
+  }
+
   const bindSel = document.getElementById("bindDeviceSelect");
   if (bindSel) {
     bindSel.innerHTML = "";
@@ -1300,6 +1341,17 @@ function renderDatabaseTab() {
       bindSel.appendChild(opt);
     });
   }
+}
+
+function saveGoogleClientId() {
+  if (!state.isAdmin) return;
+  const input = document.getElementById("inputGoogleClientId");
+  const val = (input ? input.value : "").trim();
+  state.data.googleClientId = val;
+  StorageManager.save(state.data);
+  renderApp();
+  initGoogleIdentity();
+  showToast(val ? "Google Client ID berhasil disimpan & diaktifkan!" : "Google Client ID telah dikosongkan.");
 }
 
 function bindDeviceToSelectedMember() {

@@ -154,6 +154,7 @@ class StorageManager {
       }
 
       if (!data.adminPin) data.adminPin = "1234";
+      if (data.googleClientId === undefined) data.googleClientId = "";
       return data;
     } catch (e) {
       console.error("Gagal membaca LocalStorage, memuat default.", e);
