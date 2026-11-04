@@ -179,14 +179,20 @@ function updateRoleViews() {
     adminBadge.classList.remove("hidden");
     adminBadge.classList.add("flex");
     userBadge.classList.add("hidden");
-    headerSubtitle.textContent = "Dashboard Pengurus & Rekap Ubudiyah";
+    if (headerSubtitle) {
+      headerSubtitle.textContent = "Dashboard Pengurus & Rekap Ubudiyah";
+      headerSubtitle.classList.remove("hidden");
+    }
   } else {
     // Mode Petugas Biasa
     adminNav.classList.add("hidden");
     btnAdminTrigger.classList.remove("hidden");
     adminBadge.classList.add("hidden");
     adminBadge.classList.remove("flex");
-    headerSubtitle.textContent = "Portal Presensi Petugas";
+    if (headerSubtitle) {
+      headerSubtitle.textContent = "";
+      headerSubtitle.classList.add("hidden");
+    }
 
     // Jika tab saat ini bukan presensi, otomatis alihkan ke presensi
     if (state.currentTab !== "presensi") {
