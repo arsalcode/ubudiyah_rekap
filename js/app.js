@@ -582,7 +582,7 @@ function setupClickAdzanButton() {
     StorageManager.save(state.data);
     playSuccessSound();
     renderPresensiTab();
-    showToast(`Alhamdulillah! Presensi bertugas berhasil dicatat untuk ${user} 🕌`);
+    showToast("Alhamdulillah");
   });
 }
 
@@ -625,7 +625,7 @@ function undoLastAdzan() {
 
   StorageManager.save(state.data);
   renderPresensiTab();
-  showToast("1 hitungan bertugas (belum di-upload) berhasil dibatalkan (-1).");
+  showToast("Berkurang");
 }
 
 function handleUploadAttendance() {
