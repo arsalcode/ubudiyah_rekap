@@ -20,11 +20,11 @@ class ExcelHandler {
 
     // 1. DATA SHEET 1: REKAP BULANAN
     const summaryRows = [
-      ["REKAPITULASI UBUDIYAH BULANAN (TOTAL ADZAN)"],
+      ["REKAPITULASI UBUDIYAH BULANAN (TOTAL BERTUGAS)"],
       [`Periode: ${monthData.name || monthName}`],
       [`Dicetak pada: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`],
       [],
-      ["No", "Nama Petugas", "Total Adzan 1 Bulan", "Ringkasan Hari Bertugas"]
+      ["No", "Nama Petugas", "Total Bertugas 1 Bulan", "Ringkasan Hari Bertugas"]
     ];
 
     let no = 1;
@@ -43,7 +43,7 @@ class ExcelHandler {
       });
       const daysStr = Object.entries(daysCount)
         .map(([d, c]) => `${d} (${c}x)`)
-        .join(", ") || (total > 0 ? `${total}x adzan tercatat` : "-");
+        .join(", ") || (total > 0 ? `${total}x bertugas tercatat` : "-");
 
       summaryRows.push([no++, name, total, daysStr]);
     });
@@ -70,7 +70,7 @@ class ExcelHandler {
         lg.day || "-",
         lg.date || "-",
         lg.time ? `${lg.time} WIB` : "-",
-        "+1 Adzan"
+        "+1 Bertugas"
       ]);
     });
 
@@ -118,11 +118,11 @@ class ExcelHandler {
           const counts = {};
           const logs = [];
 
-          // Cek apakah ada kolom "Total Adzan"
+          // Cek apakah ada kolom "Total Bertugas" atau "Total Adzan"
           let totalColIdx = -1;
           for (let c = 0; c < header.length; c++) {
             const h = String(header[c] || "").toLowerCase();
-            if (h.includes("total adzan") || (h.includes("total") && c > nameColIdx)) {
+            if (h.includes("total bertugas") || h.includes("total adzan") || (h.includes("total") && c > nameColIdx)) {
               totalColIdx = c;
               break;
             }

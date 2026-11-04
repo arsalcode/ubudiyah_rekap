@@ -186,7 +186,7 @@ function updateRoleViews() {
     btnAdminTrigger.classList.remove("hidden");
     adminBadge.classList.add("hidden");
     adminBadge.classList.remove("flex");
-    headerSubtitle.textContent = "Portal Presensi Adzan Petugas";
+    headerSubtitle.textContent = "Portal Presensi Petugas";
 
     // Jika tab saat ini bukan presensi, otomatis alihkan ke presensi
     if (state.currentTab !== "presensi") {
@@ -504,7 +504,7 @@ function updateActionButtonsState() {
     } else {
       btnKurangi.classList.remove("opacity-40", "cursor-not-allowed");
       btnKurangi.classList.add("cursor-pointer", "hover:bg-red-700", "active:scale-95");
-      btnKurangi.setAttribute("title", "Kurangi 1 hitungan adzan sesi ini (sebelum di-upload)");
+      btnKurangi.setAttribute("title", "Kurangi 1 hitungan bertugas sesi ini (sebelum di-upload)");
     }
   }
 
@@ -517,7 +517,7 @@ function updateActionButtonsState() {
     } else {
       btnUpload.classList.remove("opacity-40", "cursor-not-allowed");
       btnUpload.classList.add("cursor-pointer", "hover:bg-emerald-700", "active:scale-95");
-      btnUpload.setAttribute("title", `Upload ${sessionClickCount}x adzan sekarang`);
+      btnUpload.setAttribute("title", `Upload ${sessionClickCount}x bertugas sekarang`);
     }
   }
 }
@@ -576,7 +576,7 @@ function setupClickAdzanButton() {
     StorageManager.save(state.data);
     playSuccessSound();
     renderPresensiTab();
-    showToast(`Alhamdulillah! +1 Adzan berhasil dicatat untuk ${user} 🕌`);
+    showToast(`Alhamdulillah! Presensi bertugas berhasil dicatat untuk ${user} 🕌`);
   });
 }
 
@@ -593,7 +593,7 @@ function undoLastAdzan() {
 
   const currentCount = (month.counts && month.counts[user]) || 0;
   if (currentCount <= 0) {
-    showToast("Hitungan adzan Anda sudah 0.", "error");
+    showToast("Hitungan bertugas Anda sudah 0.", "error");
     return;
   }
 
@@ -619,7 +619,7 @@ function undoLastAdzan() {
 
   StorageManager.save(state.data);
   renderPresensiTab();
-  showToast("1 hitungan adzan (belum di-upload) berhasil dibatalkan (-1).");
+  showToast("1 hitungan bertugas (belum di-upload) berhasil dibatalkan (-1).");
 }
 
 function handleUploadAttendance() {
@@ -785,7 +785,7 @@ function renderRekapTable() {
           </span>`
         ).join("")
       : (val > 0 
-          ? `<span class="text-slate-400 text-xs italic">${val}x adzan tercatat</span>` 
+          ? `<span class="text-slate-400 text-xs italic">${val}x bertugas tercatat</span>` 
           : `<span class="text-slate-300 text-xs">-</span>`);
 
     const tr = document.createElement("tr");
@@ -820,7 +820,7 @@ function renderRekapTable() {
   });
 
   tfoot.innerHTML = `<tr>
-    <td colspan="2" class="py-3 px-3 text-right uppercase text-xs font-black tracking-wider text-slate-700">Total Adzan 1 Bulan:</td>
+    <td colspan="2" class="py-3 px-3 text-right uppercase text-xs font-black tracking-wider text-slate-700">Total Bertugas 1 Bulan:</td>
     <td class="py-3 px-3 text-center text-emerald-900 font-black text-base bg-emerald-100 border border-emerald-200">${grandTotal}x</td>
     <td colspan="3" class="no-print"></td>
   </tr>`;
@@ -856,7 +856,7 @@ function manualAdjust(name, delta) {
 
   StorageManager.save(state.data);
   renderApp();
-  showToast(`${name}: ${next} adzan (${month.name})`);
+  showToast(`${name}: ${next}x bertugas (${month.name})`);
 }
 
 function copyWhatsAppSummary() {
@@ -881,16 +881,16 @@ function copyWhatsAppSummary() {
 
   let text = `📋 *REKAPITULASI UBUDIYAH BULANAN*\n`;
   text += `📅 *Periode:* ${month.name}\n`;
-  text += `📊 *Total Adzan:* ${grandTotal}x (${sorted.length} Petugas Bertugas)\n\n`;
+  text += `📊 *Total Bertugas:* ${grandTotal}x (${sorted.length} Petugas Bertugas)\n\n`;
   text += `*Perolehan Petugas:*\n`;
 
   if (sorted.length === 0) {
-    text += `_(Belum ada data adzan pada bulan ini)_\n`;
+    text += `_(Belum ada data bertugas pada bulan ini)_\n`;
   } else {
     sorted.forEach((m, idx) => {
       const icon = idx === 0 ? "🥇 " : idx === 1 ? "🥈 " : idx === 2 ? "🥉 " : `${idx + 1}. `;
       const daysStr = m.days.length > 0 ? ` _(Hari: ${m.days.join(", ")})_` : "";
-      text += `${icon}*${m.name}*: ${m.count}x adzan${daysStr}\n`;
+      text += `${icon}*${m.name}*: ${m.count}x bertugas${daysStr}\n`;
     });
   }
 
@@ -931,7 +931,7 @@ function openMemberHistoryModal(name) {
   const memberLogs = (month.logs || []).filter(l => l.name === name);
   const total = (month.counts && month.counts[name]) || memberLogs.length;
 
-  if (badge) badge.textContent = `${total}x Adzan`;
+  if (badge) badge.textContent = `${total}x Bertugas`;
   if (list) {
     list.innerHTML = "";
     if (memberLogs.length === 0) {
@@ -969,7 +969,7 @@ function closeMemberHistoryModal() {
 
 function deleteLogEntry(logId, name) {
   if (!state.isAdmin) return;
-  if (!confirm(`Hapus 1 catatan adzan ini untuk ${name}?`)) return;
+  if (!confirm(`Hapus 1 catatan bertugas ini untuk ${name}?`)) return;
 
   const month = getActiveMonth();
   const idx = (month.logs || []).findIndex(l => l.id == logId);
@@ -1252,7 +1252,7 @@ function renderAdminMonthCards() {
 
   months.forEach(m => {
     const isActive = m.id === state.data.activeMonth;
-    const totalAdzan = Object.values(m.counts || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    const totalBertugas = Object.values(m.counts || {}).reduce((a, b) => a + (Number(b) || 0), 0);
     const totalPetugas = Object.values(m.counts || {}).filter(c => c > 0).length;
 
     const card = document.createElement("div");
@@ -1269,7 +1269,7 @@ function renderAdminMonthCards() {
           ${isActive ? '<span class="text-[10px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full">Bulan Aktif</span>' : ''}
         </div>
         <p class="text-xs text-slate-500 mt-0.5">
-          <span class="font-semibold text-emerald-700">${totalAdzan}x</span> total adzan • <span class="font-semibold text-slate-700">${totalPetugas}</span> petugas aktif
+          <span class="font-semibold text-emerald-700">${totalBertugas}x</span> total bertugas • <span class="font-semibold text-slate-700">${totalPetugas}</span> petugas aktif
         </p>
       </div>
 
@@ -1318,7 +1318,7 @@ function deleteMonth(monthId) {
   const m = state.data.months && state.data.months[targetId];
   if (!m) return;
 
-  if (confirm(`Yakin ingin menghapus periode "${m.name}"?\nSemua riwayat adzan pada bulan ini akan ikut terhapus.`)) {
+  if (confirm(`Yakin ingin menghapus periode "${m.name}"?\nSemua riwayat bertugas pada bulan ini akan ikut terhapus.`)) {
     delete state.data.months[targetId];
     if (state.data.activeMonth === targetId) {
       const remaining = Object.keys(state.data.months || {});
@@ -1442,7 +1442,7 @@ function bindDeviceToSelectedMember() {
   sessionClickCount = 0;
   StorageManager.save(state.data);
   renderApp();
-  showToast(`Berhasil! Browser HP ini dikunci untuk "${matched.name}". Setiap kali dibuka akan langsung masuk ke tombol adzan.`);
+  showToast(`Berhasil! Browser HP ini dikunci untuk "${matched.name}". Setiap kali dibuka akan langsung masuk ke tombol bertugas.`);
 }
 
 function resetDeviceAccount() {
@@ -1585,7 +1585,7 @@ function processPastedText() {
 
   StorageManager.save(state.data);
   renderApp();
-  showToast(`Berhasil menambahkan ${addedTotal}x adzan ke bulan ${month.name}!`);
+  showToast(`Berhasil menambahkan ${addedTotal}x bertugas ke bulan ${month.name}!`);
   switchTab("rekap");
 }
 

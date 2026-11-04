@@ -4,16 +4,12 @@
  */
 
 const DEFAULT_MEMBERS = [
-  { name: "Arsal", email: "arsalah18m@gmail.com" },
-  { name: "Rohman", email: "rohman@gmail.com" },
-  { name: "Alan", email: "alan@gmail.com" },
-  { name: "Kang Angga", email: "angga@gmail.com" },
-  { name: "Rizki", email: "rizki@gmail.com" },
-  { name: "Kang Nabill", email: "nabill@gmail.com" },
-  { name: "Tami", email: "tami@gmail.com" },
-  { name: "Radit", email: "radit@gmail.com" },
-  { name: "Rama", email: "rama@gmail.com" },
-  { name: "Teguh", email: "teguh@gmail.com" }
+  { name: "Muhammad Arsal", email: "arsalcode404@gmail.com" },
+  { name: "Ahmad Radit Famudji", email: "raditfam11@gmail.com" },
+  { name: "Abdurrohman Arrozi", email: "yurozbelajar@gmail.com" },
+  { name: "Rama Wirantara", email: "ramawiran22@gmail.com" },
+  { name: "Teguh Firmansyah", email: "firmansyahteguh429@gmail.com" },
+  { name: "Alan", email: "sakagalang25@gmail.com" }
 ];
 
 const INITIAL_DATA_SIMPLE = {
@@ -28,16 +24,12 @@ const INITIAL_DATA_SIMPLE = {
       id: "2026-11",
       name: "November 2026",
       counts: {
-        "Arsal": 0,
-        "Rohman": 0,
-        "Alan": 0,
-        "Kang Angga": 0,
-        "Rizki": 0,
-        "Kang Nabill": 0,
-        "Tami": 0,
-        "Radit": 0,
-        "Rama": 0,
-        "Teguh": 0
+        "Muhammad Arsal": 0,
+        "Ahmad Radit Famudji": 0,
+        "Abdurrohman Arrozi": 0,
+        "Rama Wirantara": 0,
+        "Teguh Firmansyah": 0,
+        "Alan": 0
       },
       logs: []
     },
@@ -46,22 +38,18 @@ const INITIAL_DATA_SIMPLE = {
       name: "Juli 2026",
       counts: {
         "Alan": 18,
-        "Rama": 16,
-        "Teguh": 16,
-        "Radit": 13,
-        "Arsal": 0,
-        "Rohman": 0,
-        "Kang Angga": 0,
-        "Rizki": 0,
-        "Kang Nabill": 0,
-        "Tami": 0
+        "Rama Wirantara": 16,
+        "Teguh Firmansyah": 16,
+        "Ahmad Radit Famudji": 13,
+        "Muhammad Arsal": 0,
+        "Abdurrohman Arrozi": 0
       },
       logs: [
         { id: 101, name: "Alan", day: "Senin", date: "29 Jun 2026", time: "12:10" },
         { id: 102, name: "Alan", day: "Rabu", date: "1 Jul 2026", time: "15:20" },
-        { id: 103, name: "Radit", day: "Selasa", date: "30 Jun 2026", time: "18:15" },
-        { id: 104, name: "Rama", day: "Kamis", date: "2 Jul 2026", time: "19:30" },
-        { id: 105, name: "Teguh", day: "Jumat", date: "3 Jul 2026", time: "12:05" }
+        { id: 103, name: "Ahmad Radit Famudji", day: "Selasa", date: "30 Jun 2026", time: "18:15" },
+        { id: 104, name: "Rama Wirantara", day: "Kamis", date: "2 Jul 2026", time: "19:30" },
+        { id: 105, name: "Teguh Firmansyah", day: "Jumat", date: "3 Jul 2026", time: "12:05" }
       ]
     }
   }
@@ -95,40 +83,89 @@ class StorageManager {
 
     try {
       const data = JSON.parse(raw);
-      // Validasi struktur members (pastikan punya format { name, email })
-      if (!data.members || data.members.length === 0) {
-        data.members = [...DEFAULT_MEMBERS];
-      } else {
-        data.members = data.members.map((m) => {
-          if (typeof m === "string") {
-            const defaultMatch = DEFAULT_MEMBERS.find(d => d.name.toLowerCase() === m.toLowerCase());
-            return {
-              name: m,
-              email: defaultMatch ? defaultMatch.email : `${m.toLowerCase().replace(/\s+/g, '')}@gmail.com`
-            };
-          } else if (typeof m === "object" && m !== null) {
-            if (m.name && m.name.toLowerCase() === "arsal" && (!m.email || m.email === "arsal@gmail.com")) {
-              m.email = "arsalah18m@gmail.com";
-            }
-            if (!m.email || !m.email.trim()) {
-              const defaultMatch = DEFAULT_MEMBERS.find(d => d.name.toLowerCase() === (m.name || "").toLowerCase());
-              m.email = defaultMatch ? defaultMatch.email : `${(m.name || "petugas").toLowerCase().replace(/\s+/g, '')}@gmail.com`;
-            }
-            return m;
-          }
-          return m;
-        });
+
+      // Peta migrasi nama dan email lama ke format resmi baru
+      const NAME_MAP = {
+        "arsal": "Muhammad Arsal",
+        "muhammad arsal": "Muhammad Arsal",
+        "radit": "Ahmad Radit Famudji",
+        "ahmad radit famudji": "Ahmad Radit Famudji",
+        "rohman": "Abdurrohman Arrozi",
+        "abdurrohman arrozi": "Abdurrohman Arrozi",
+        "rama": "Rama Wirantara",
+        "rama wirantara": "Rama Wirantara",
+        "teguh": "Teguh Firmansyah",
+        "teguh firmansyah": "Teguh Firmansyah",
+        "alan": "Alan"
+      };
+
+      const OLD_EMAIL_MAP = {
+        "arsalah18m@gmail.com": "arsalcode404@gmail.com",
+        "arsal@gmail.com": "arsalcode404@gmail.com",
+        "radit@gmail.com": "raditfam11@gmail.com",
+        "rohman@gmail.com": "yurozbelajar@gmail.com",
+        "rama@gmail.com": "ramawiran22@gmail.com",
+        "teguh@gmail.com": "firmansyahteguh429@gmail.com",
+        "alan@gmail.com": "sakagalang25@gmail.com"
+      };
+
+      // 1. Pastikan daftar anggota selalu sinkron dengan 6 DEFAULT_MEMBERS resmi
+      const dummyNames = ["kang angga", "rizki", "kang nabill", "tami", "arsal", "radit", "rohman", "rama", "teguh"];
+      const finalMembers = DEFAULT_MEMBERS.map(dm => ({ ...dm }));
+      (data.members || []).forEach(m => {
+        const mName = typeof m === 'object' ? m.name : m;
+        const low = mName.toLowerCase();
+        if (!dummyNames.includes(low) && !finalMembers.some(fm => fm.name.toLowerCase() === low)) {
+          finalMembers.push(typeof m === 'object' ? m : { name: mName, email: `${low.replace(/\s+/g, '')}@gmail.com` });
+        }
+      });
+      data.members = finalMembers;
+
+      // 2. Migrasikan counts dan logs di setiap bulan agar terhubung ke nama baru
+      if (!data.months || Object.keys(data.months).length === 0) {
+        data.months = JSON.parse(JSON.stringify(INITIAL_DATA_SIMPLE.months));
       }
 
-      // Ambil akun petugas yang tersimpan khusus di browser perangkat ini
-      const savedDeviceEmail = localStorage.getItem("ubudiyah_device_auth_email");
+      Object.values(data.months).forEach(m => {
+        if (!m.counts) m.counts = {};
+        if (!m.logs) m.logs = [];
+
+        const updatedCounts = {};
+        DEFAULT_MEMBERS.forEach(dm => {
+          updatedCounts[dm.name] = 0;
+        });
+
+        Object.entries(m.counts).forEach(([k, v]) => {
+          const mapped = NAME_MAP[k.toLowerCase()];
+          if (mapped) {
+            updatedCounts[mapped] = (updatedCounts[mapped] || 0) + (Number(v) || 0);
+          } else if (v > 0) {
+            updatedCounts[k] = v;
+          }
+        });
+        m.counts = updatedCounts;
+
+        m.logs.forEach(l => {
+          if (l.name) {
+            const mapped = NAME_MAP[l.name.toLowerCase()];
+            if (mapped) l.name = mapped;
+          }
+        });
+      });
+
+      // 3. Ambil akun petugas yang tersimpan khusus di browser perangkat ini
+      let savedDeviceEmail = localStorage.getItem("ubudiyah_device_auth_email");
+      if (savedDeviceEmail && OLD_EMAIL_MAP[savedDeviceEmail.toLowerCase()]) {
+        savedDeviceEmail = OLD_EMAIL_MAP[savedDeviceEmail.toLowerCase()];
+        localStorage.setItem("ubudiyah_device_auth_email", savedDeviceEmail);
+      }
+
       if (savedDeviceEmail) {
         const matched = data.members.find(m => (typeof m === 'object' ? m.email : '').toLowerCase() === savedDeviceEmail.toLowerCase());
         if (matched) {
           data.currentUser = matched.name;
           data.currentEmail = matched.email;
         } else {
-          // Email di HP ini sudah tidak terdaftar / telah diubah oleh Admin -> Cabut akses!
           localStorage.removeItem("ubudiyah_device_auth_email");
           data.currentUser = null;
           data.currentEmail = null;
@@ -137,17 +174,6 @@ class StorageManager {
         data.currentUser = null;
         data.currentEmail = null;
       }
-
-      // Pastikan data bulan valid
-      if (!data.months || Object.keys(data.months).length === 0) {
-        data.months = JSON.parse(JSON.stringify(INITIAL_DATA_SIMPLE.months));
-      }
-
-      // Pastikan setiap bulan memiliki counts dan logs
-      Object.values(data.months).forEach(m => {
-        if (!m.counts) m.counts = {};
-        if (!m.logs) m.logs = [];
-      });
 
       if (!data.activeMonth || !data.months[data.activeMonth]) {
         data.activeMonth = Object.keys(data.months)[0];

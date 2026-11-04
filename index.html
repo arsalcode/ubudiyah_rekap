@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Presensi & Rekap Ubudiyah</title>
+  <title>Ubudiyah</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -137,7 +137,7 @@
           <i class="fa-solid fa-mosque"></i>
         </div>
         <div>
-          <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Presensi Petugas Ubudiyah</h2>
+          <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Assalamualaikum,</h2>
           <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
             Masuk dengan <strong>Email Google</strong> Anda yang telah didaftarkan oleh Admin/Pengurus DKM.
           </p>
@@ -238,7 +238,7 @@
           </div>
         </div>
 
-        <!-- TOMBOL RAKSASA: 1-KLIK SAYA ADZAN -->
+        <!-- TOMBOL RAKSASA: 1-KLIK SAYA BERTUGAS -->
         <div class="bg-gradient-to-b from-white via-white to-emerald-50/50 rounded-3xl border border-emerald-100 p-6 sm:p-12 text-center shadow-sm relative overflow-hidden">
           
           <!-- Indikator Angka Sementara Sesi Ini (BULAT DI POJOK ATAS KIRI) -->
@@ -252,16 +252,15 @@
             <div class="relative inline-block shrink-0">
               <div class="absolute inset-0 rounded-full bg-emerald-400 opacity-20 pulse-ring"></div>
               <button id="btnClickAdzan" class="btn-adzan-giant relative w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-gradient-to-tr from-emerald-700 via-emerald-600 to-emerald-500 text-white flex flex-col items-center justify-center border-4 border-emerald-200 shadow-2xl cursor-pointer select-none">
-                <i class="fa-solid fa-bullhorn text-4xl sm:text-5xl mb-2 drop-shadow-md"></i>
-                <span class="text-lg sm:text-xl font-black tracking-wide uppercase drop-shadow-sm">SAYA ADZAN</span>
-                <span class="text-xs font-bold bg-white/20 px-3 py-0.5 rounded-full mt-1.5 text-emerald-50">+1 Adzan</span>
+                <i class="fa-solid fa-user-check text-4xl sm:text-5xl mb-2 drop-shadow-md"></i>
+                <span class="text-base sm:text-lg font-black tracking-wide uppercase drop-shadow-sm text-center px-4 leading-tight">SAYA BERTUGAS</span>
               </button>
             </div>
           </div>
 
           <p class="text-xs sm:text-sm text-slate-600 font-medium mt-6">
-            Klik tombol di atas setiap kali Anda selesai adzan.<br>
-            <span class="text-slate-400 text-xs">Hitungan otomatis masuk ke rekap tanpa perlu pilih waktu sholat.</span>
+            Klik tombol di atas setiap kali Anda selesai bertugas<br>
+            <span class="text-slate-400 text-xs">Jazakallahu khairan katsiran</span>
           </p>
 
           <!-- Tombol Aksi: Kurangi & Upload -->
@@ -269,7 +268,7 @@
             
             <div class="flex flex-wrap items-center justify-center gap-3">
               <!-- Tombol Kurangi (Kotak Merah Solid) -->
-              <button id="btnKurangiAdzan" onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" title="Kurangi hitungan adzan (hanya sebelum di-upload)">
+              <button id="btnKurangiAdzan" onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" title="Kurangi hitungan bertugas (hanya sebelum di-upload)">
                 <i class="fa-solid fa-minus text-xs"></i>
                 <span>Kurangi</span>
               </button>
@@ -301,7 +300,7 @@
       <!-- Header Cetak -->
       <div class="print-only hidden mb-6 text-center border-b-2 border-slate-800 pb-4">
         <h2 class="text-xl font-bold uppercase tracking-wider" id="printReportTitle">REKAPITULASI UBUDIYAH BULANAN</h2>
-        <p class="text-sm text-slate-600 mt-1">Laporan Akumulasi Jumlah Adzan Petugas</p>
+        <p class="text-sm text-slate-600 mt-1">Laporan Akumulasi Jumlah Petugas Bertugas</p>
       </div>
 
       <!-- Bilah Pilihan Periode & Aksi Cepat Admin -->
@@ -342,7 +341,7 @@
       <!-- Ringkasan Statistik -->
       <div class="grid grid-cols-3 gap-3 no-print">
         <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-center">
-          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Total Adzan</p>
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">Total Bertugas</p>
           <h3 class="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5" id="statGrandTotal">0</h3>
         </div>
         <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-center">
@@ -360,7 +359,7 @@
         <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 to-white">
           <div>
             <h3 class="text-sm sm:text-base font-bold text-slate-800">
-              Rekapitulasi Adzan 1 Bulan: <span class="text-emerald-700" id="tableMonthLabel">November 2026</span>
+              Rekapitulasi Petugas Bertugas 1 Bulan: <span class="text-emerald-700" id="tableMonthLabel">November 2026</span>
             </h3>
             <p class="text-xs text-slate-500">Akumulasi total hitungan satu bulan penuh beserta riwayat hari bertugas.</p>
           </div>
@@ -432,7 +431,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-bold text-slate-800">Kelola Periode Bulan Presensi</h3>
-            <p class="text-xs text-slate-500">Pilih bulan aktif untuk pencatatan adzan atau buat data bulan baru (contoh: November 2026, Desember 2026, dll.).</p>
+            <p class="text-xs text-slate-500">Pilih bulan aktif untuk pencatatan presensi atau buat data bulan baru (contoh: November 2026, Desember 2026, dll.).</p>
           </div>
           <button onclick="promptNewMonth()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center space-x-1.5 shadow-2xs cursor-pointer">
             <i class="fa-solid fa-calendar-plus"></i>
@@ -503,7 +502,7 @@
               Input Cepat: Tempel Teks Catatan WhatsApp
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
-              Jika Anda punya catatan teks mingguan dari grup WA, tempel di sini dan sistem akan otomatis menghitung jumlah adzannya!
+              Jika Anda punya catatan teks mingguan dari grup WA, tempel di sini dan sistem akan otomatis menghitung jumlah bertugasnya!
             </p>
           </div>
           <button onclick="loadSampleText()" class="text-xs font-semibold px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">
@@ -541,7 +540,7 @@ List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
             </span>
           </div>
           <p class="text-[11px] text-slate-600 leading-relaxed">
-            Pilih nama petugas di bawah untuk mengunci browser HP ini langsung ke petugas tersebut. Setiap kali web dibuka, akan <strong>langsung masuk ke tombol adzan</strong> tanpa perlu ketik email lagi.
+            Pilih nama petugas di bawah untuk mengunci browser HP ini langsung ke petugas tersebut. Setiap kali web dibuka, akan <strong>langsung masuk ke tombol presensi bertugas</strong> tanpa perlu ketik email lagi.
           </p>
           <div class="flex flex-wrap sm:flex-nowrap gap-2 pt-1">
             <select id="bindDeviceSelect" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -670,7 +669,7 @@ List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
             <input type="email" id="memberFormEmail" required placeholder="Contoh: arsal@gmail.com" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
           </div>
           <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-            Petugas yang login di Chrome dengan email ini akan otomatis masuk ke tombol adzannya sendiri.
+            Petugas yang login di Chrome dengan email ini akan otomatis masuk ke akun presensinya sendiri.
           </p>
         </div>
 
@@ -707,8 +706,8 @@ List Minggu Pertama Mulai Tanggal minggu 28 Juni 2026
 
       <div class="space-y-2">
         <div class="flex items-center justify-between px-1 text-xs font-bold text-slate-600">
-          <span>Daftar Hari & Jam Adzan:</span>
-          <span id="memberHistoryCountBadge" class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-black">0x Adzan</span>
+          <span>Daftar Hari & Jam Bertugas:</span>
+          <span id="memberHistoryCountBadge" class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-black">0x Bertugas</span>
         </div>
         <div id="memberHistoryList" class="max-h-72 overflow-y-auto space-y-2 pr-1">
           <!-- Diisi dinamis -->
