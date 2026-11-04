@@ -145,22 +145,14 @@
 
         <!-- Integrasi Google Sign In Resmi (Mendeteksi Profil Akun Chrome Asli) -->
         <div id="googleAuthSection" class="space-y-4">
-          <div id="googleBtnSlot" class="flex justify-center min-h-[44px]"></div>
+          <div id="googleBtnSlot" class="hidden justify-center min-h-[44px]"></div>
 
-          <!-- Pesan Jika Google Client ID Belum Diatur -->
-          <div id="googleSetupNotice" class="hidden p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs text-left space-y-1">
-            <p class="font-bold flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-info text-amber-600"></i>
-              Google Sign-In Perlu Client ID
-            </p>
-            <p class="text-amber-700 leading-relaxed text-[11px]">
-              Admin belum memasukkan <strong>Google Client ID</strong> di Mode Admin. Anda dapat login sementara lewat form di bawah atau masukkan Client ID di Tab Database.
-            </p>
-          </div>
+          <!-- Pesan Jika Google Client ID Belum Diatur (Disembunyikan) -->
+          <div id="googleSetupNotice" class="hidden"></div>
 
-          <!-- Section Fallback Input Manual (Otomatis disembunyikan saat Google Client ID aktif) -->
+          <!-- Section Input Email Petugas -->
           <div id="manualEmailLoginSection" class="space-y-3.5 pt-1">
-            <div class="relative flex py-1 items-center">
+            <div id="googleDivider" class="hidden relative py-1 items-center">
               <div class="flex-grow border-t border-slate-200"></div>
               <span class="flex-shrink mx-3 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">atau masukkan email Google</span>
               <div class="flex-grow border-t border-slate-200"></div>
@@ -172,7 +164,7 @@
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Google Petugas</label>
                 <div class="relative">
                   <i class="fa-brands fa-google absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-                  <input type="email" id="inputGoogleEmail" required placeholder="contoh: arsalah18m@gmail.com" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                  <input type="email" id="inputGoogleEmail" required placeholder="contoh: arsalcode404@gmail.com" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
                 </div>
               </div>
 

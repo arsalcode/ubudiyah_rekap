@@ -380,28 +380,25 @@ function initGoogleIdentity() {
   const btnSlot = document.getElementById("googleBtnSlot");
   const setupNotice = document.getElementById("googleSetupNotice");
   const manualSection = document.getElementById("manualEmailLoginSection");
+  const googleDivider = document.getElementById("googleDivider");
 
   const hasClientId = Boolean(state.data.googleClientId && state.data.googleClientId.trim());
 
   if (!hasClientId) {
-    if (setupNotice) setupNotice.classList.remove("hidden");
+    if (setupNotice) setupNotice.classList.add("hidden");
     if (manualSection) manualSection.classList.remove("hidden");
+    if (googleDivider) googleDivider.classList.add("hidden");
     if (btnSlot) {
-      btnSlot.innerHTML = `
-        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-500 text-center w-full space-y-1">
-          <i class="fa-brands fa-google text-slate-400 text-xl mb-0.5 block"></i>
-          <span class="font-bold text-slate-700 block text-xs">Tombol Login Akun Google Chrome</span>
-          <span class="text-[11px] text-slate-400 block leading-relaxed">
-            Akan muncul otomatis setelah Admin memasukkan <strong>Google Client ID</strong> di Tab Database.
-          </span>
-        </div>
-      `;
+      btnSlot.innerHTML = "";
+      btnSlot.classList.add("hidden");
     }
     return;
   }
 
   // Jika Google Client ID sudah diatur oleh Admin:
   if (setupNotice) setupNotice.classList.add("hidden");
+  if (btnSlot) btnSlot.classList.remove("hidden");
+  if (googleDivider) googleDivider.classList.remove("hidden");
   if (manualSection) manualSection.classList.add("hidden"); // Kunci ketat: sembunyikan form input manual agar tidak bisa dipalsukan
 
   if (typeof google === "undefined" || !google.accounts || !google.accounts.id) {
