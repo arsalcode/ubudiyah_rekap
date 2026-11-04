@@ -12,12 +12,14 @@ const DEFAULT_MEMBERS = [
   { name: "Alan", email: "sakagalang25@gmail.com" }
 ];
 
+const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwaWIEd76BJEBHv95XEyYqudZ15ZEahu4K68c1SClhhONJDX8a7wDSmvbK43ATlrSpbag/exec";
+
 const INITIAL_DATA_SIMPLE = {
   currentUser: null,       // Belum ada user sebelum login email di browser HP tersebut
   currentEmail: null,      // Belum ada email sebelum login email di browser HP tersebut
   adminPin: "Alkautsar26", // Password Admin Pengurus DKM
   googleClientId: "",      // Opsional: Google OAuth Client ID untuk Google One Tap
-  googleSheetUrl: "",      // URL Google Apps Script Web App untuk sinkronisasi cloud online
+  googleSheetUrl: DEFAULT_GOOGLE_SHEET_URL, // URL Google Apps Script Web App resmi sinkronisasi cloud
   activeMonth: "2026-11",  // Bulan aktif default: November 2026
   members: [...DEFAULT_MEMBERS],
   months: {
@@ -183,10 +185,12 @@ class StorageManager {
       if (!data.adminPin || data.adminPin === "1234") data.adminPin = "Alkautsar26";
       if (data.googleClientId === undefined) data.googleClientId = "";
       const savedSheetUrl = localStorage.getItem("ubudiyah_google_sheet_url");
-      if (savedSheetUrl && !data.googleSheetUrl) {
+      if (savedSheetUrl) {
         data.googleSheetUrl = savedSheetUrl;
       }
-      if (data.googleSheetUrl === undefined) data.googleSheetUrl = "";
+      if (!data.googleSheetUrl) {
+        data.googleSheetUrl = DEFAULT_GOOGLE_SHEET_URL;
+      }
       return data;
     } catch (e) {
       console.error("Gagal membaca LocalStorage, memuat default.", e);
