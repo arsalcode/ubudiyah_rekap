@@ -4,12 +4,12 @@
  */
 
 const DEFAULT_MEMBERS = [
-  { name: "Muhammad Arsal", email: "arsalcode404@gmail.com" },
-  { name: "Ahmad Radit Famudji", email: "raditfam11@gmail.com" },
-  { name: "Abdurrohman Arrozi", email: "yurozbelajar@gmail.com" },
-  { name: "Rama Wirantara", email: "ramawiran22@gmail.com" },
-  { name: "Teguh Firmansyah", email: "firmansyahteguh429@gmail.com" },
-  { name: "Alan", email: "sakagalang25@gmail.com" }
+  { name: "Muhammad Arsal", email: "arsalcode404@gmail.com", password: "123456" },
+  { name: "Ahmad Radit Famudji", email: "raditfam11@gmail.com", password: "123456" },
+  { name: "Abdurrohman Arrozi", email: "yurozbelajar@gmail.com", password: "123456" },
+  { name: "Rama Wirantara", email: "ramawiran22@gmail.com", password: "123456" },
+  { name: "Teguh Firmansyah", email: "firmansyahteguh429@gmail.com", password: "123456" },
+  { name: "Alan", email: "sakagalang25@gmail.com", password: "123456" }
 ];
 
 const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwaWIEd76BJEBHv95XEyYqudZ15ZEahu4K68c1SClhhONJDX8a7wDSmvbK43ATlrSpbag/exec";
@@ -119,8 +119,12 @@ class StorageManager {
         const mName = typeof m === 'object' ? m.name : m;
         const low = mName.toLowerCase();
         if (!dummyNames.includes(low) && !finalMembers.some(fm => fm.name.toLowerCase() === low)) {
-          finalMembers.push(typeof m === 'object' ? m : { name: mName, email: `${low.replace(/\s+/g, '')}@gmail.com` });
+          finalMembers.push(typeof m === 'object' ? m : { name: mName, email: `${low.replace(/\s+/g, '')}@gmail.com`, password: "123456" });
         }
+      });
+      // Pastikan setiap anggota memiliki password
+      finalMembers.forEach(m => {
+        if (!m.password) m.password = "123456";
       });
       data.members = finalMembers;
 

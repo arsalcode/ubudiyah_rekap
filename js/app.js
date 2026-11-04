@@ -48,13 +48,8 @@ function checkUrlAuthParams() {
       const params = new URLSearchParams(window.location.search);
       const email = params.get("email");
       if (email) {
-        const matched = findMemberByEmail(email);
-        if (matched) {
-          state.data.currentEmail = matched.email;
-          state.data.currentUser = matched.name;
-          localStorage.setItem("ubudiyah_device_auth_email", matched.email);
-          StorageManager.save(state.data);
-        }
+        const input = document.getElementById("inputGoogleEmail");
+        if (input) input.value = email;
       }
     }
   } catch (e) {}
@@ -350,30 +345,71 @@ function renderPresensiTab() {
 
 function handleEmailLogin(event) {
   if (event) event.preventDefault();
-  const input = document.getElementById("inputGoogleEmail");
+  const emailInput = document.getElementById("inputGoogleEmail");
+  const pwInput = document.getElementById("inputPetugasPassword");
   const errBox = document.getElementById("emailAuthError");
   const errText = document.getElementById("emailAuthErrorText");
-  const email = (input ? input.value : "").trim().toLowerCase();
 
-  if (!email) return;
+  const email = (emailInput ? emailInput.value : "").trim().toLowerCase();
+  const password = (pwInput ? pwInput.value : "").trim();
+
+  if (!email) {
+    showToast("Silakan masukkan email Anda.", "error");
+    if (emailInput) emailInput.focus();
+    return;
+  }
+
+  if (!password) {
+    showToast("Silakan masukkan password akun Anda.", "error");
+    if (pwInput) pwInput.focus();
+    return;
+  }
 
   const matched = findMemberByEmail(email);
-  if (matched) {
-    if (errBox) errBox.classList.add("hidden");
-    state.data.currentEmail = matched.email;
-    state.data.currentUser = matched.name;
-    localStorage.setItem("ubudiyah_device_auth_email", matched.email);
-    sessionClickCount = 0;
-    StorageManager.save(state.data);
-    renderApp();
-    showToast(`Alhamdulillah! Selamat datang, ${matched.name}. Browser HP ini otomatis mengingat akun Anda.`);
-  } else {
+  if (!matched) {
     if (errBox) {
       errBox.classList.remove("hidden");
       errText.textContent = `Email "${email}" belum didaftarkan sebagai petugas oleh Admin. Hubungi pengurus DKM untuk mendaftarkan email Anda.`;
     }
     showToast("Email tidak terdaftar sebagai petugas!", "error");
-    if (input) input.select();
+    if (emailInput) emailInput.select();
+    return;
+  }
+
+  const expectedPw = (matched.password || "123456").trim();
+  if (password !== expectedPw) {
+    if (errBox) {
+      errBox.classList.remove("hidden");
+      errText.textContent = "Password yang Anda masukkan salah. Periksa kembali huruf besar/kecil atau tanyakan kepada Admin.";
+    }
+    showToast("Password salah! Silakan coba lagi.", "error");
+    if (pwInput) {
+      pwInput.focus();
+      pwInput.select();
+    }
+    return;
+  }
+
+  if (errBox) errBox.classList.add("hidden");
+  state.data.currentEmail = matched.email;
+  state.data.currentUser = matched.name;
+  localStorage.setItem("ubudiyah_device_auth_email", matched.email);
+  sessionClickCount = 0;
+  StorageManager.save(state.data);
+  renderApp();
+  showToast(`Alhamdulillah! Selamat datang, ${matched.name}. Browser HP ini otomatis mengingat akun Anda.`);
+}
+
+function togglePasswordVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input) return;
+  if (input.type === "password") {
+    input.type = "text";
+    if (icon) icon.className = "fa-solid fa-eye-slash text-xs";
+  } else {
+    input.type = "password";
+    if (icon) icon.className = "fa-solid fa-eye text-xs";
   }
 }
 
@@ -1054,6 +1090,7 @@ function renderManageMembers() {
   members.forEach((m, idx) => {
     const name = typeof m === "object" ? m.name : m;
     const email = typeof m === "object" ? (m.email || "Belum ada email") : "Belum ada email";
+    const password = typeof m === "object" ? (m.password || "123456") : "123456";
 
     const card = document.createElement("div");
     card.className = "p-3.5 bg-slate-50 hover:bg-slate-100/90 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full sm:w-[calc(50%-0.4rem)] shadow-2xs transition";
@@ -1068,14 +1105,18 @@ function renderManageMembers() {
             <i class="fa-brands fa-google text-[11px] text-emerald-600 shrink-0"></i>
             <span class="truncate font-mono text-[11px] text-slate-600">${email}</span>
           </p>
+          <p class="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5 mt-0.5">
+            <i class="fa-solid fa-key text-[10px] text-amber-500 shrink-0"></i>
+            <span class="font-mono text-[11px] text-slate-600">PW: <span class="bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded border border-amber-300">${password}</span></span>
+          </p>
         </div>
       </div>
       <div class="flex items-center space-x-1.5 shrink-0 self-end sm:self-center">
-        <button onclick="openEditMemberModal(${idx})" class="px-2.5 py-1.5 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs" title="Edit Nama & Email Petugas">
+        <button onclick="openEditMemberModal(${idx})" class="px-2.5 py-1.5 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer" title="Edit Nama, Email & Password Petugas">
           <i class="fa-solid fa-pen-to-square text-emerald-600 text-[11px]"></i>
           <span>Edit</span>
         </button>
-        <button onclick="removeMemberByIndex(${idx})" class="p-1.5 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-300 rounded-xl text-xs transition" title="Hapus Petugas">
+        <button onclick="removeMemberByIndex(${idx})" class="p-1.5 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-300 rounded-xl text-xs transition cursor-pointer" title="Hapus Petugas">
           <i class="fa-solid fa-trash-can text-xs"></i>
         </button>
       </div>
@@ -1094,6 +1135,8 @@ function openAddMemberModal() {
   document.getElementById("memberFormSubmitText").textContent = "Daftarkan Petugas";
   document.getElementById("memberFormName").value = "";
   document.getElementById("memberFormEmail").value = "";
+  const pwInput = document.getElementById("memberFormPassword");
+  if (pwInput) pwInput.value = "123456";
 
   modal.classList.remove("hidden");
   setTimeout(() => {
@@ -1122,12 +1165,15 @@ function openEditMemberModal(target) {
   const obj = state.data.members[idx];
   const name = typeof obj === "object" ? obj.name : obj;
   const email = typeof obj === "object" ? (obj.email || "") : "";
+  const password = typeof obj === "object" ? (obj.password || "123456") : "123456";
 
   document.getElementById("memberFormIndex").value = String(idx);
   document.getElementById("memberFormTitle").textContent = `Edit Petugas: ${name}`;
   document.getElementById("memberFormSubmitText").textContent = "Simpan Perubahan";
   document.getElementById("memberFormName").value = name;
   document.getElementById("memberFormEmail").value = email;
+  const pwInput = document.getElementById("memberFormPassword");
+  if (pwInput) pwInput.value = password;
 
   modal.classList.remove("hidden");
   setTimeout(() => {
@@ -1151,9 +1197,11 @@ function handleMemberFormSubmit(event) {
   const idx = parseInt(document.getElementById("memberFormIndex").value, 10);
   const nameInput = document.getElementById("memberFormName");
   const emailInput = document.getElementById("memberFormEmail");
+  const pwInput = document.getElementById("memberFormPassword");
 
   const cleanName = (nameInput ? nameInput.value : "").trim();
   const cleanEmail = (emailInput ? emailInput.value : "").trim().toLowerCase();
+  const cleanPw = (pwInput ? pwInput.value : "").trim() || "123456";
 
   if (!cleanName) {
     showToast("Nama petugas tidak boleh kosong!", "error");
@@ -1185,7 +1233,7 @@ function handleMemberFormSubmit(event) {
     const oldName = typeof oldObj === "object" ? oldObj.name : oldObj;
     const oldEmail = typeof oldObj === "object" ? oldObj.email : "";
 
-    state.data.members[idx] = { name: cleanName, email: cleanEmail };
+    state.data.members[idx] = { name: cleanName, email: cleanEmail, password: cleanPw };
 
     // Update jika nama berubah di data bulan
     if (cleanName !== oldName) {
@@ -1225,6 +1273,7 @@ function handleMemberFormSubmit(event) {
     closeMemberFormModal();
     renderApp();
     showToast(`Data petugas "${cleanName}" (${cleanEmail}) berhasil diperbarui!`);
+    syncMembersToCloud();
   } else {
     // Mode TAMBAH BARU
     const nameDuplicate = (state.data.members || []).some(m => {
@@ -1237,11 +1286,30 @@ function handleMemberFormSubmit(event) {
       return;
     }
 
-    state.data.members.push({ name: cleanName, email: cleanEmail });
+    state.data.members.push({ name: cleanName, email: cleanEmail, password: cleanPw });
     StorageManager.save(state.data);
     closeMemberFormModal();
     renderApp();
     showToast(`Petugas baru "${cleanName}" (${cleanEmail}) berhasil didaftarkan!`);
+    syncMembersToCloud();
+  }
+}
+
+function syncMembersToCloud() {
+  const sheetUrl = (state.data.googleSheetUrl || localStorage.getItem("ubudiyah_google_sheet_url") || "").trim();
+  if (sheetUrl) {
+    fetch(sheetUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "sync_state",
+        state: {
+          activeMonth: state.data.activeMonth,
+          months: state.data.months,
+          members: state.data.members
+        }
+      })
+    }).catch(e => console.warn("Sync members ke cloud gagal:", e));
   }
 }
 
@@ -1267,6 +1335,7 @@ function removeMemberByIndex(idx) {
     StorageManager.save(state.data);
     renderApp();
     showToast(`Petugas "${name}" telah dihapus.`);
+    syncMembersToCloud();
   }
 }
 
