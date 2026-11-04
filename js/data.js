@@ -17,6 +17,7 @@ const INITIAL_DATA_SIMPLE = {
   currentEmail: null,      // Belum ada email sebelum login email di browser HP tersebut
   adminPin: "Alkautsar26", // Password Admin Pengurus DKM
   googleClientId: "",      // Opsional: Google OAuth Client ID untuk Google One Tap
+  googleSheetUrl: "",      // URL Google Apps Script Web App untuk sinkronisasi cloud online
   activeMonth: "2026-11",  // Bulan aktif default: November 2026
   members: [...DEFAULT_MEMBERS],
   months: {
@@ -181,6 +182,11 @@ class StorageManager {
 
       if (!data.adminPin || data.adminPin === "1234") data.adminPin = "Alkautsar26";
       if (data.googleClientId === undefined) data.googleClientId = "";
+      const savedSheetUrl = localStorage.getItem("ubudiyah_google_sheet_url");
+      if (savedSheetUrl && !data.googleSheetUrl) {
+        data.googleSheetUrl = savedSheetUrl;
+      }
+      if (data.googleSheetUrl === undefined) data.googleSheetUrl = "";
       return data;
     } catch (e) {
       console.error("Gagal membaca LocalStorage, memuat default.", e);

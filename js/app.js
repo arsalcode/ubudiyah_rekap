@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupAdminPinModal();
   renderApp();
   initGoogleIdentity();
+  syncWithGoogleSheet(false);
 });
 
 function checkUrlAuthParams() {
@@ -625,7 +626,7 @@ function undoLastAdzan() {
   showToast("Berkurang");
 }
 
-function handleUploadAttendance() {
+async function handleUploadAttendance() {
   const user = state.data.currentUser;
   if (!user) {
     showToast("Silakan login terlebih dahulu.", "error");
@@ -646,25 +647,60 @@ function handleUploadAttendance() {
   if (icon) icon.className = "fa-solid fa-spinner fa-spin text-xs";
   if (text) text.textContent = "Mengunggah...";
 
-  setTimeout(() => {
-    StorageManager.save(state.data);
+  const month = getActiveMonth();
+  const clicksToUpload = sessionClickCount;
+  const recentLogs = (month.logs || [])
+    .filter(l => l.name === user)
+    .slice(0, clicksToUpload);
 
-    // Kunci final: Hilangkan angka sesi dan kunci tombol kurangi karena data sudah resmi di-upload
-    sessionClickCount = 0;
-    updateSessionBadge();
+  const sheetUrl = (state.data.googleSheetUrl || localStorage.getItem("ubudiyah_google_sheet_url") || "").trim();
+  let uploadedToCloud = false;
 
-    if (btn) btn.disabled = false;
-    if (icon) icon.className = "fa-solid fa-cloud-arrow-up text-xs";
-    if (text) text.textContent = "Upload";
+  if (sheetUrl) {
+    try {
+      const payload = {
+        action: "upload_attendance",
+        monthId: month.id,
+        monthName: month.name,
+        name: user,
+        email: state.data.currentEmail || "",
+        count: clicksToUpload,
+        logs: recentLogs
+      };
 
-    if (notice) {
-      notice.classList.remove("hidden");
-      notice.classList.add("flex");
+      await fetch(sheetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      uploadedToCloud = true;
+    } catch (err) {
+      console.warn("Gagal mengirim presensi ke Google Sheets:", err);
     }
+  }
 
-    playSuccessSound();
-    showToast(`Alhamdulillah! Upload selesai untuk ${user} ☁️ Data telah tersimpan permanen.`);
-  }, 400);
+  // Kunci final lokal
+  StorageManager.save(state.data);
+  sessionClickCount = 0;
+  updateSessionBadge();
+
+  if (btn) btn.disabled = false;
+  if (icon) icon.className = "fa-solid fa-cloud-arrow-up text-xs";
+  if (text) text.textContent = "Upload";
+
+  if (notice) {
+    notice.classList.remove("hidden");
+    notice.classList.add("flex");
+  }
+
+  playSuccessSound();
+  if (uploadedToCloud) {
+    showToast(`Alhamdulillah! Berhasil di-upload ke Google Sheets untuk ${user} ☁️`);
+  } else if (sheetUrl) {
+    showToast(`Alhamdulillah! Tersimpan di HP. (Koneksi cloud sedang offline)`);
+  } else {
+    showToast(`Alhamdulillah! Tersimpan di HP ini. (Hubungkan Google Sheets di Admin agar masuk online)`);
+  }
 }
 
 
@@ -988,6 +1024,20 @@ function deleteLogEntry(logId, name) {
   renderApp();
   openMemberHistoryModal(name);
   showToast(`1 catatan riwayat ${name} berhasil dihapus.`);
+
+  const sheetUrl = (state.data.googleSheetUrl || localStorage.getItem("ubudiyah_google_sheet_url") || "").trim();
+  if (sheetUrl) {
+    fetch(sheetUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "delete_log",
+        logId: logId,
+        monthId: month.id,
+        name: name
+      })
+    }).catch(e => console.warn("Gagal hapus log di cloud:", e));
+  }
 }
 
 /**
@@ -1381,6 +1431,24 @@ function renderDatabaseTab() {
       : "Tidak Ada";
   }
 
+  // Update input dan status badge Google Sheets Web App
+  const sheetInput = document.getElementById("inputGoogleSheetUrl");
+  const sheetBadge = document.getElementById("googleSheetStatusBadge");
+  const currentSheetUrl = (state.data.googleSheetUrl || localStorage.getItem("ubudiyah_google_sheet_url") || "").trim();
+
+  if (sheetInput) {
+    sheetInput.value = currentSheetUrl;
+  }
+  if (sheetBadge) {
+    if (currentSheetUrl) {
+      sheetBadge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+      sheetBadge.textContent = "Tersambung Cloud";
+    } else {
+      sheetBadge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300";
+      sheetBadge.textContent = "Belum Terhubung";
+    }
+  }
+
   // Update input dan status badge Google Client ID
   const clientIdInput = document.getElementById("inputGoogleClientId");
   const clientIdBadge = document.getElementById("googleClientIdStatusBadge");
@@ -1412,6 +1480,153 @@ function renderDatabaseTab() {
       bindSel.appendChild(opt);
     });
   }
+}
+
+async function saveAndTestGoogleSheetUrl() {
+  if (!state.isAdmin) return;
+  const input = document.getElementById("inputGoogleSheetUrl");
+  const btn = document.getElementById("btnSaveGoogleSheet");
+  if (!input) return;
+
+  const url = input.value.trim();
+  if (!url) {
+    state.data.googleSheetUrl = "";
+    localStorage.removeItem("ubudiyah_google_sheet_url");
+    StorageManager.save(state.data);
+    showToast("Koneksi Google Sheets dinonaktifkan.");
+    syncWithGoogleSheet(false);
+    return;
+  }
+
+  if (!url.startsWith("https://script.google.com/macros/s/")) {
+    showToast("URL harus berformat Web App Apps Script (berakhiran /exec)", "error");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Menguji...</span>`;
+  }
+
+  try {
+    const res = await fetch(`${url}?action=test&t=${Date.now()}`);
+    const data = await res.json();
+    if (data && data.status === "success") {
+      state.data.googleSheetUrl = url;
+      localStorage.setItem("ubudiyah_google_sheet_url", url);
+      StorageManager.save(state.data);
+
+      // Sinkronkan data saat ini ke Google Sheets
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "sync_state",
+          state: {
+            activeMonth: state.data.activeMonth,
+            months: state.data.months,
+            members: state.data.members
+          }
+        })
+      });
+
+      showToast("Alhamdulillah! Berhasil tersambung ke Google Sheets! Data online telah aktif. ✨");
+      renderApp();
+      syncWithGoogleSheet(false);
+    } else {
+      throw new Error(data ? data.message : "Gagal tes koneksi");
+    }
+  } catch (err) {
+    alert("Gagal terhubung ke Google Apps Script: " + err.message + "\n\nPastikan saat Deploy Aplikasi Web di Apps Script, opsi 'Who has access' (Siapa yang memiliki akses) diatur ke 'Anyone' (Siapa saja).");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-link text-xs"></i> <span>Hubungkan & Simpan</span>`;
+    }
+  }
+}
+
+async function syncWithGoogleSheet(forceToast = false) {
+  const sheetUrl = (state.data.googleSheetUrl || localStorage.getItem("ubudiyah_google_sheet_url") || "").trim();
+  const badge = document.getElementById("googleSheetStatusBadge");
+
+  if (!sheetUrl) {
+    if (badge) {
+      badge.textContent = "Belum Terhubung";
+      badge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300";
+    }
+    if (forceToast) showToast("URL Google Sheets belum diatur di menu Database.", "error");
+    return;
+  }
+
+  if (badge) {
+    badge.textContent = "Menyinkronkan...";
+    badge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300";
+  }
+
+  try {
+    const res = await fetch(`${sheetUrl}?action=get_all&t=${Date.now()}`);
+    const data = await res.json();
+
+    if (data && data.status === "success") {
+      let hasChanges = false;
+
+      if (data.months && Object.keys(data.months).length > 0) {
+        Object.keys(data.months).forEach(mId => {
+          if (!state.data.months[mId]) {
+            state.data.months[mId] = data.months[mId];
+            hasChanges = true;
+          } else {
+            // Gabungkan hitungan & logs dari Google Sheets
+            state.data.months[mId].counts = data.months[mId].counts || state.data.months[mId].counts;
+            if (data.months[mId].logs && data.months[mId].logs.length > 0) {
+              state.data.months[mId].logs = data.months[mId].logs;
+            }
+            hasChanges = true;
+          }
+        });
+      }
+
+      if (data.activeMonth && state.data.months[data.activeMonth]) {
+        state.data.activeMonth = data.activeMonth;
+      }
+
+      StorageManager.save(state.data);
+      renderApp();
+
+      if (badge) {
+        badge.textContent = "Tersambung Cloud";
+        badge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+      }
+
+      if (forceToast) showToast("Sukses! Data terbaru berhasil disinkronkan dari Google Sheets ☁️");
+    } else {
+      throw new Error(data ? data.message : "Respon tidak valid");
+    }
+  } catch (err) {
+    console.warn("Gagal sinkron Google Sheets:", err);
+    if (badge) {
+      badge.textContent = "Offline";
+      badge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300";
+    }
+    if (forceToast) showToast("Gagal mengambil data dari Google Sheets: " + err.message, "error");
+  }
+}
+
+function copyAppsScriptCode() {
+  fetch("google_apps_script.js")
+    .then(r => r.text())
+    .then(text => {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        showToast("Kode Google Apps Script berhasil disalin ke Clipboard! ✨");
+      } else {
+        fallbackCopy(text);
+      }
+    })
+    .catch(() => {
+      showToast("Buka file 'google_apps_script.js' di proyek website ini untuk menyalin kode.");
+    });
 }
 
 function saveGoogleClientId() {
