@@ -225,19 +225,40 @@ function setupAdminPinModal() {
 function openAdminPinModal() {
   const modal = document.getElementById("adminPinModal");
   const input = document.getElementById("adminPinInput");
-  input.value = "";
-  modal.classList.remove("hidden");
-  setTimeout(() => input.focus(), 100);
+  const icon = document.getElementById("adminPasswordToggleIcon");
+  if (input) {
+    input.value = "";
+    input.type = "password";
+  }
+  if (icon) {
+    icon.className = "fa-solid fa-eye-slash text-sm text-slate-400";
+  }
+  if (modal) modal.classList.remove("hidden");
+  setTimeout(() => { if (input) input.focus(); }, 100);
 }
 
 function closeAdminPinModal() {
   document.getElementById("adminPinModal").classList.add("hidden");
 }
 
+function toggleAdminPasswordVisibility() {
+  const input = document.getElementById("adminPinInput");
+  const icon = document.getElementById("adminPasswordToggleIcon");
+  if (!input || !icon) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.className = "fa-solid fa-eye text-sm text-emerald-600";
+  } else {
+    input.type = "password";
+    icon.className = "fa-solid fa-eye-slash text-sm text-slate-400";
+  }
+}
+
 function submitAdminPin() {
   const input = document.getElementById("adminPinInput");
-  const pin = input.value.trim();
-  const correctPin = state.data.adminPin || "1234";
+  const pin = (input ? input.value : "").trim();
+  const correctPin = state.data.adminPin || "Alkautsar26";
 
   if (pin === correctPin) {
     state.isAdmin = true;
@@ -247,8 +268,8 @@ function submitAdminPin() {
     switchTab("rekap"); // Langsung buka tabel rekap untuk admin
     showToast("Selamat datang di Mode Admin Pengurus! 👑");
   } else {
-    showToast("PIN Admin salah! Coba periksa kembali.", "error");
-    input.select();
+    showToast("Password Admin salah! Periksa huruf besar/kecilnya.", "error");
+    if (input) input.select();
   }
 }
 
@@ -261,24 +282,25 @@ function logoutAdmin() {
 }
 
 function promptChangeAdminPin() {
-  const currentPin = state.data.adminPin || "1234";
-  const oldInput = prompt("Masukkan PIN Admin saat ini:");
+  const currentPin = state.data.adminPin || "Alkautsar26";
+  const oldInput = prompt("Masukkan Password Admin saat ini:");
   if (oldInput === null) return;
   if (oldInput.trim() !== currentPin) {
-    showToast("PIN saat ini salah!", "error");
+    showToast("Password Admin saat ini salah!", "error");
     return;
   }
 
-  const newPin = prompt("Masukkan PIN Admin baru (4-8 angka/huruf):");
+  const newPin = prompt("Masukkan Password Admin baru (huruf & angka):");
   if (!newPin || !newPin.trim()) {
-    showToast("PIN baru tidak boleh kosong.", "error");
+    showToast("Password baru tidak boleh kosong.", "error");
     return;
   }
 
   state.data.adminPin = newPin.trim();
   StorageManager.save(state.data);
-  document.getElementById("currentPinPreview").textContent = state.data.adminPin;
-  showToast("PIN Admin berhasil diubah!");
+  const preview = document.getElementById("currentPinPreview");
+  if (preview) preview.textContent = state.data.adminPin;
+  showToast("Password Admin berhasil diperbarui!");
 }
 
 /**
@@ -1348,7 +1370,7 @@ function promptNewMonth() {
  */
 function renderDatabaseTab() {
   if (!state.isAdmin) return;
-  document.getElementById("currentPinPreview").textContent = state.data.adminPin || "1234";
+  document.getElementById("currentPinPreview").textContent = state.data.adminPin || "Alkautsar26";
   const boundLabel = document.getElementById("deviceBoundUserLabel");
   if (boundLabel) {
     boundLabel.textContent = state.data.currentUser 

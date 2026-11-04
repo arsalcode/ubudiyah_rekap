@@ -19,7 +19,7 @@ const DEFAULT_MEMBERS = [
 const INITIAL_DATA_SIMPLE = {
   currentUser: null,       // Belum ada user sebelum login email di browser HP tersebut
   currentEmail: null,      // Belum ada email sebelum login email di browser HP tersebut
-  adminPin: "1234",        // PIN Admin
+  adminPin: "Alkautsar26", // Password Admin Pengurus DKM
   googleClientId: "",      // Opsional: Google OAuth Client ID untuk Google One Tap
   activeMonth: "2026-11",  // Bulan aktif default: November 2026
   members: [...DEFAULT_MEMBERS],
@@ -153,7 +153,7 @@ class StorageManager {
         data.activeMonth = Object.keys(data.months)[0];
       }
 
-      if (!data.adminPin) data.adminPin = "1234";
+      if (!data.adminPin || data.adminPin === "1234") data.adminPin = "Alkautsar26";
       if (data.googleClientId === undefined) data.googleClientId = "";
       return data;
     } catch (e) {
