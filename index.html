@@ -269,13 +269,13 @@
             
             <div class="flex flex-wrap items-center justify-center gap-3">
               <!-- Tombol Kurangi (Kotak Merah Solid) -->
-              <button onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer" title="Kurangi hitungan adzan">
+              <button id="btnKurangiAdzan" onclick="undoLastAdzan()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" title="Kurangi hitungan adzan (hanya sebelum di-upload)">
                 <i class="fa-solid fa-minus text-xs"></i>
                 <span>Kurangi</span>
               </button>
 
               <!-- Tombol Upload (Kotak Hijau Solid) -->
-              <button id="btnUploadPresensi" onclick="handleUploadAttendance()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer" title="Upload data presensi">
+              <button id="btnUploadPresensi" onclick="handleUploadAttendance()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-none shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" title="Upload data presensi">
                 <i id="btnUploadIcon" class="fa-solid fa-cloud-arrow-up text-xs"></i>
                 <span id="btnUploadText">Upload</span>
               </button>

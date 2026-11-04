@@ -463,6 +463,41 @@ function updateSessionBadge() {
     badge.classList.add("hidden");
     badge.classList.remove("flex");
   }
+
+  updateActionButtonsState();
+}
+
+function updateActionButtonsState() {
+  const btnKurangi = document.getElementById("btnKurangiAdzan");
+  const btnUpload = document.getElementById("btnUploadPresensi");
+
+  const hasUnsavedClicks = sessionClickCount > 0;
+
+  if (btnKurangi) {
+    btnKurangi.disabled = !hasUnsavedClicks;
+    if (!hasUnsavedClicks) {
+      btnKurangi.classList.add("opacity-40", "cursor-not-allowed");
+      btnKurangi.classList.remove("cursor-pointer", "hover:bg-red-700", "active:scale-95");
+      btnKurangi.setAttribute("title", "Tidak ada hitungan sesi yang bisa dikurangi (data sudah di-upload)");
+    } else {
+      btnKurangi.classList.remove("opacity-40", "cursor-not-allowed");
+      btnKurangi.classList.add("cursor-pointer", "hover:bg-red-700", "active:scale-95");
+      btnKurangi.setAttribute("title", "Kurangi 1 hitungan adzan sesi ini (sebelum di-upload)");
+    }
+  }
+
+  if (btnUpload) {
+    btnUpload.disabled = !hasUnsavedClicks;
+    if (!hasUnsavedClicks) {
+      btnUpload.classList.add("opacity-40", "cursor-not-allowed");
+      btnUpload.classList.remove("cursor-pointer", "hover:bg-emerald-700", "active:scale-95");
+      btnUpload.setAttribute("title", "Semua hitungan sudah ter-upload");
+    } else {
+      btnUpload.classList.remove("opacity-40", "cursor-not-allowed");
+      btnUpload.classList.add("cursor-pointer", "hover:bg-emerald-700", "active:scale-95");
+      btnUpload.setAttribute("title", `Upload ${sessionClickCount}x adzan sekarang`);
+    }
+  }
 }
 
 
@@ -528,6 +563,12 @@ function undoLastAdzan() {
   const month = getActiveMonth();
   if (!user || !month) return;
 
+  // Proteksi Utama: Jika sudah di-upload (sessionClickCount === 0), tidak boleh dikurangi!
+  if (sessionClickCount <= 0) {
+    showToast("Tidak bisa dikurangi. Data sudah resmi di-upload! Hubungi Admin jika ada kekeliruan.", "error");
+    return;
+  }
+
   const currentCount = (month.counts && month.counts[user]) || 0;
   if (currentCount <= 0) {
     showToast("Hitungan adzan Anda sudah 0.", "error");
@@ -556,13 +597,18 @@ function undoLastAdzan() {
 
   StorageManager.save(state.data);
   renderPresensiTab();
-  showToast("1 hitungan adzan berhasil dikurangi (-1).");
+  showToast("1 hitungan adzan (belum di-upload) berhasil dibatalkan (-1).");
 }
 
 function handleUploadAttendance() {
   const user = state.data.currentUser;
   if (!user) {
     showToast("Silakan login terlebih dahulu.", "error");
+    return;
+  }
+
+  if (sessionClickCount <= 0) {
+    showToast("Belum ada hitungan baru untuk di-upload.", "error");
     return;
   }
 
@@ -578,7 +624,7 @@ function handleUploadAttendance() {
   setTimeout(() => {
     StorageManager.save(state.data);
 
-    // Hilangkan angka dan lingkaran "Tercatat" di pojok kiri atas setelah upload selesai
+    // Kunci final: Hilangkan angka sesi dan kunci tombol kurangi karena data sudah resmi di-upload
     sessionClickCount = 0;
     updateSessionBadge();
 
@@ -592,7 +638,7 @@ function handleUploadAttendance() {
     }
 
     playSuccessSound();
-    showToast(`Alhamdulillah! Upload selesai untuk ${user} ☁️`);
+    showToast(`Alhamdulillah! Upload selesai untuk ${user} ☁️ Data telah tersimpan permanen.`);
   }, 400);
 }
 
