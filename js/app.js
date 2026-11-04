@@ -694,13 +694,7 @@ async function handleUploadAttendance() {
   }
 
   playSuccessSound();
-  if (uploadedToCloud) {
-    showToast(`Alhamdulillah! Berhasil di-upload ke Google Sheets untuk ${user} ☁️`);
-  } else if (sheetUrl) {
-    showToast(`Alhamdulillah! Tersimpan di HP. (Koneksi cloud sedang offline)`);
-  } else {
-    showToast(`Alhamdulillah! Tersimpan di HP ini. (Hubungkan Google Sheets di Admin agar masuk online)`);
-  }
+  showToast("Alhamdulillah");
 }
 
 
