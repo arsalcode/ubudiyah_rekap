@@ -112,21 +112,34 @@ class StorageManager {
         "alan@gmail.com": "sakagalang25@gmail.com"
       };
 
-      // 1. Pastikan daftar anggota selalu sinkron dengan 6 DEFAULT_MEMBERS resmi
-      const dummyNames = ["kang angga", "rizki", "kang nabill", "tami", "arsal", "radit", "rohman", "rama", "teguh"];
-      const finalMembers = DEFAULT_MEMBERS.map(dm => ({ ...dm }));
-      (data.members || []).forEach(m => {
-        const mName = typeof m === 'object' ? m.name : m;
-        const low = mName.toLowerCase();
-        if (!dummyNames.includes(low) && !finalMembers.some(fm => fm.name.toLowerCase() === low)) {
-          finalMembers.push(typeof m === 'object' ? m : { name: mName, email: `${low.replace(/\s+/g, '')}@gmail.com`, password: "123456" });
-        }
-      });
-      // Pastikan setiap anggota memiliki password
-      finalMembers.forEach(m => {
-        if (!m.password) m.password = "123456";
-      });
-      data.members = finalMembers;
+      // 1. Sinkronisasi & pemeliharaan anggota resmi
+      if (!data.members || !Array.isArray(data.members) || data.members.length === 0) {
+        data.members = DEFAULT_MEMBERS.map(dm => ({ ...dm }));
+      } else {
+        const legacyDummy = ["kang angga", "rizki", "kang nabill", "tami"];
+        const validMembers = [];
+        data.members.forEach(m => {
+          const mName = typeof m === 'object' ? (m.name || '') : String(m);
+          const low = mName.trim().toLowerCase();
+          if (!low || legacyDummy.includes(low)) return;
+
+          const email = typeof m === 'object' ? (m.email || '') : `${low.replace(/\s+/g, '')}@gmail.com`;
+          const password = typeof m === 'object' && m.password ? String(m.password).trim() : "123456";
+
+          if (!validMembers.some(vm => vm.name.toLowerCase() === low)) {
+            validMembers.push({ name: mName.trim(), email: email.trim(), password: password });
+          }
+        });
+
+        // Pastikan 6 anggota resmi tetap ada jika belum ada
+        DEFAULT_MEMBERS.forEach(dm => {
+          if (!validMembers.some(vm => vm.name.toLowerCase() === dm.name.toLowerCase())) {
+            validMembers.push({ ...dm });
+          }
+        });
+
+        data.members = validMembers;
+      }
 
       // 2. Migrasikan counts dan logs di setiap bulan agar terhubung ke nama baru
       if (!data.months || Object.keys(data.months).length === 0) {
@@ -138,7 +151,8 @@ class StorageManager {
         if (!m.logs) m.logs = [];
 
         const updatedCounts = {};
-        DEFAULT_MEMBERS.forEach(dm => {
+        // Pastikan semua anggota di data.members punya entri count minimal 0
+        data.members.forEach(dm => {
           updatedCounts[dm.name] = 0;
         });
 
@@ -146,8 +160,8 @@ class StorageManager {
           const mapped = NAME_MAP[k.toLowerCase()];
           if (mapped) {
             updatedCounts[mapped] = (updatedCounts[mapped] || 0) + (Number(v) || 0);
-          } else if (v > 0) {
-            updatedCounts[k] = v;
+          } else {
+            updatedCounts[k] = Number(v) || 0;
           }
         });
         m.counts = updatedCounts;

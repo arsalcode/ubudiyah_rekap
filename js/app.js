@@ -1287,6 +1287,14 @@ function handleMemberFormSubmit(event) {
     }
 
     state.data.members.push({ name: cleanName, email: cleanEmail, password: cleanPw });
+
+    // Inisialisasi hitungan 0 di semua bulan agar nama langsung muncul di tabel rekap
+    Object.values(state.data.months || {}).forEach(m => {
+      if (m.counts && m.counts[cleanName] === undefined) {
+        m.counts[cleanName] = 0;
+      }
+    });
+
     StorageManager.save(state.data);
     closeMemberFormModal();
     renderApp();
@@ -1634,6 +1642,34 @@ async function syncWithGoogleSheet(forceToast = false) {
     if (data && data.status === "success") {
       let hasChanges = false;
 
+      // 1. Sinkronisasi daftar anggota & password dari Google Sheets
+      if (data.members && Array.isArray(data.members) && data.members.length > 0) {
+        data.members.forEach(cloudM => {
+          const cName = typeof cloudM === 'object' ? cloudM.name : cloudM;
+          if (!cName) return;
+          const low = cName.trim().toLowerCase();
+          const existing = (state.data.members || []).find(m => (typeof m === 'object' ? m.name : m).toLowerCase() === low);
+          if (existing && typeof existing === 'object' && typeof cloudM === 'object') {
+            if (cloudM.email && existing.email !== cloudM.email) {
+              existing.email = cloudM.email;
+              hasChanges = true;
+            }
+            if (cloudM.password && existing.password !== cloudM.password) {
+              existing.password = cloudM.password;
+              hasChanges = true;
+            }
+          } else if (!existing) {
+            state.data.members.push(typeof cloudM === 'object' ? cloudM : {
+              name: cName,
+              email: `${low.replace(/\s+/g, '')}@gmail.com`,
+              password: "123456"
+            });
+            hasChanges = true;
+          }
+        });
+      }
+
+      // 2. Sinkronisasi data hitungan bulan & logs
       if (data.months && Object.keys(data.months).length > 0) {
         Object.keys(data.months).forEach(mId => {
           if (!state.data.months[mId]) {
